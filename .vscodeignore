@@ -1,0 +1,11 @@
+src/**
+tests/**
+scripts/**
+docs/**
+.vscode/**
+.github/**
+node_modules/**
+**/*.map
+tsconfig.json
+eslint.config.mjs
+package-lock.json

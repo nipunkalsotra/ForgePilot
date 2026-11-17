@@ -1,0 +1,109 @@
+{
+  "name": "forgepilot",
+  "displayName": "ForgePilot",
+  "description": "Read-only TrueForge agent foundation for VS Code.",
+  "version": "0.1.0",
+  "type": "module",
+  "publisher": "nipunkalsotra",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nipunkalsotra/ForgePilot.git"
+  },
+  "engines": {
+    "vscode": "^1.101.0",
+    "node": ">=22.14.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.cjs",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "forgepilot.start",
+        "title": "ForgePilot: Start Read-Only Session"
+      },
+      {
+        "command": "forgepilot.ask",
+        "title": "ForgePilot: Ask Agent"
+      },
+      {
+        "command": "forgepilot.cancel",
+        "title": "ForgePilot: Cancel Turn"
+      },
+      {
+        "command": "forgepilot.stop",
+        "title": "ForgePilot: Stop Session and MCP Server"
+      },
+      {
+        "command": "forgepilot.setToken",
+        "title": "ForgePilot: Set TrueForge Authentication Token"
+      }
+    ],
+    "configuration": {
+      "title": "ForgePilot",
+      "properties": {
+        "forgepilot.baseUrl": {
+          "type": "string",
+          "default": "http://localhost:8790",
+          "scope": "machine",
+          "description": "Local TrueForge URL. Only loopback HTTP URLs are accepted."
+        },
+        "forgepilot.agentName": {
+          "type": "string",
+          "default": "forge-coder",
+          "scope": "machine",
+          "description": "Existing saved read-only TrueForge agent."
+        },
+        "forgepilot.turnTimeoutSeconds": {
+          "type": "number",
+          "default": 180,
+          "minimum": 10,
+          "maximum": 600,
+          "scope": "machine",
+          "description": "Overall turn deadline, including streaming."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "lint": "eslint . --max-warnings 0",
+    "setup:agent": "node --import tsx scripts/setup-agent.ts",
+    "pretest": "npm run build",
+    "test": "node --import tsx --test --test-timeout=15000 tests/*.test.ts",
+    "test:unit": "node --import tsx --test --test-timeout=15000 tests/workspace.test.ts tests/events.test.ts tests/config.test.ts",
+    "test:integration": "npm run build && node --import tsx --test --test-timeout=15000 tests/mcp.test.ts tests/bridge.test.ts",
+    "test:live": "npm run build && node --import tsx scripts/verify-live.ts",
+    "test:extension": "npm run build && node --import tsx scripts/verify-extension.ts",
+    "check": "npm run build && npm run lint && npm test",
+    "vscode:prepublish": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@truefoundry/trueforge-sdk": "0.185.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "1.101.0",
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.0",
+    "eslint": "10.15.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
