@@ -9,7 +9,7 @@ import { PatchStore, hash } from '../src/patch';
 import { Workspace } from '../src/workspace';
 
 /** Explicit SDK wire fixture. Live model evidence comes from verify-editing-live.ts. */
-async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed') {
+async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'after-error' | 'incomplete' | 'missing-terminal' | 'late-terminal' | 'approval-error' | 'output-error') {
   const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-approval-'));
   const content = 'const value = 1;\n';
   await writeFile(path.join(root, 'file.ts'), content);
@@ -23,7 +23,12 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed') {
   const execution = new Promise<void>(resolve => { executionReady = resolve; });
   let connector = '';
   const send = (event: object) => held?.write(`data: ${JSON.stringify({ created_at: new Date().toISOString(), thread_id: 'main', id: crypto.randomUUID(), ...event })}\n\n`);
-  const done = () => { send({ type: 'turn.done', state: { status: 'done', completed_at: new Date().toISOString(), output: null, required_actions: [] } }); held?.end(); };
+  const done = () => {
+    if (mode === 'missing-terminal') { held?.end(); return; }
+    send({ type: 'turn.done', state: mode === 'after-error' ? { status: 'error', completed_at: new Date().toISOString(), message: 'fixture provider failure' } : { status: 'done', completed_at: new Date().toISOString(), output: null, required_actions: mode === 'incomplete' ? [{ type: 'tool.approval_required', id: 'pending', thread_id: 'main', created_at: '', tool_calls: [] }] : [] } });
+    if (mode === 'late-terminal') send({ type: 'model.message.delta', content: 'late output' });
+    held?.end();
+  };
   const source = () => ({ type: 'model.message', id: 'source', created_at: new Date().toISOString(), thread_id: 'main', content: null, tool_calls: [{ id: 'call', type: 'function', function: { name: 'propose_patch', arguments: JSON.stringify(mode === 'malformed' ? { bad: true } : patch) }, tool_info: { type: 'mcp', name: 'propose_patch', server_id: connector, server_name: connector } }] });
   const http = createServer((req, res) => { void (async () => {
     const buffers = []; for await (const b of req) buffers.push(b);
@@ -51,9 +56,12 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed') {
     if (pathname.endsWith('/turns')) {
       held = res; res.writeHead(200, { 'Content-Type': 'text/event-stream' });
       send({ type: 'turn.created', turn_id: 'turn', previous_turn_id: null, state: { status: 'running' } });
-      if (mode === 'error') { send({ type: 'turn.done', state: { status: 'error' } }); res.end(); return; }
+      if (mode === 'output-error') send({ type: 'model.message.delta', content: 'apparently successful response' });
+      if (mode === 'error' || mode === 'output-error') { send({ type: 'turn.done', state: { status: 'error', completed_at: new Date().toISOString(), message: 'fixture provider error' } }); res.end(); return; }
       // Deliberately omit model.message on SSE: exercise real 0.185.1 source-event lookup.
-      send({ type: 'tool.approval_required', tool_calls: [{ id: 'call', source_event_id: 'source' }] }); return;
+      send({ type: 'tool.approval_required', tool_calls: [{ id: 'call', source_event_id: 'source' }] });
+      if (mode === 'approval-error') send({ type: 'turn.done', state: { status: 'error', completed_at: '', message: 'failed during approval' } });
+      return;
     }
     res.writeHead(404).end();
   })().catch(() => res.writeHead(500).end()); });
@@ -107,4 +115,26 @@ test('SDK approval: cancel after allow ignores delayed tool result', async () =>
     const rejected = assert.rejects(turn, /cancelled/); await arrived; await f.execution; assert.equal(f.executed(), true); await f.bridge.cancel(); f.late(); await rejected;
     assert.equal(f.store.current, undefined); await f.unchanged();
   } finally { await f.close(); }
+});
+
+test('unsuccessful completion after staged patch always invalidates proposal', async () => {
+  for (const mode of ['after-error', 'incomplete', 'missing-terminal', 'late-terminal'] as const) {
+    const f = await fixture(mode); try {
+      await f.bridge.start();
+      await assert.rejects(f.bridge.propose(f.store, 'change', () => {}, async () => true), /failed|complet|terminal/);
+      assert.equal(f.store.current?.status, 'cancelled');
+      assert.throws(() => f.store.accepted(f.store.current!.id));
+      await f.unchanged(); f.late(); assert.equal(f.store.current?.status, 'cancelled');
+      assert.ok(f.requests.some(r => r.path.endsWith('/cancel')));
+    } finally { await f.close(); }
+  }
+});
+
+test('failure during approval or after model output cannot become a proposal', async () => {
+  for (const mode of ['approval-error', 'output-error'] as const) {
+    const f = await fixture(mode); try {
+      await f.bridge.start(); await assert.rejects(f.bridge.propose(f.store, 'change', () => {}, async () => true), /failed/);
+      assert.equal(f.store.current, undefined); await f.unchanged();
+    } finally { await f.close(); }
+  }
 });

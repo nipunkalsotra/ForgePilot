@@ -1,5 +1,6 @@
 import type { TrueForgeApi } from '@truefoundry/trueforge-sdk';
 import { ForgePilotError, type Logger } from './log';
+import { requireSuccessfulCompletion } from './completion';
 
 /** Render provider text deltas immediately; final messages are not printed twice. */
 export class EventRenderer {
@@ -29,7 +30,7 @@ export class EventRenderer {
         this.terminal = true;
         this.log('turn.done', { status: event.state.status });
         this.write(`\n[turn ${event.state.status}]\n`);
-        if (event.state.status === 'error') throw new ForgePilotError('TrueForge turn failed. Check the session and model provider in TrueForge.');
+        requireSuccessfulCompletion(event.state);
         break;
       case 'tool.approval_required':
       case 'tool.response_required':

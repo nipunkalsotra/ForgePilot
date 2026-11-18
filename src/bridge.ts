@@ -4,6 +4,7 @@ import { TrueForge, type TrueForgeApi } from '@truefoundry/trueforge-sdk';
 import { Companion } from './companion';
 import { localBaseUrl } from './config';
 import { EventRenderer } from './events';
+import { requireSuccessfulCompletion } from './completion';
 import { ForgePilotError, type Logger } from './log';
 
 export interface BridgeOptions {
@@ -169,6 +170,8 @@ export class Bridge {
         { abortSignal: controller.signal, timeoutInSeconds: this.deadline, maxRetries: 0 });
       for await (const event of stream) {
         if (controller.signal.aborted) throw new ForgePilotError('Turn cancelled.');
+        if (terminal) throw new ForgePilotError('TrueForge emitted events after completion. Pending proposals are invalid.');
+        if (event.type === 'turn.done') requireSuccessfulCompletion(event.state);
         if (event.type === 'turn.created') turnId = event.turnId;
         const action = onEvent?.(event, controller.signal);
         let abortListener: (() => void) | undefined;
@@ -191,7 +194,6 @@ export class Bridge {
         renderer.accept(event);
         if (event.type === 'turn.done') {
           terminal = true;
-          if (event.state.status === 'cancelled') throw new ForgePilotError('TrueForge cancelled the turn.');
         }
       }
       if (controller.signal.aborted) throw new ForgePilotError('Turn cancelled.');
