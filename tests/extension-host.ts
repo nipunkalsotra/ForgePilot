@@ -4,6 +4,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { batchHostTests } from './batch-host';
 import { taskBHost } from './autonomous-host';
+import { autonomousLiveHost } from './autonomous-live-host';
 import type { Autonomous } from '../src/autonomous';
 import { editingHostTests, flaskHostTest } from './editing-host';
 import type { Editing } from '../src/editing';
@@ -13,13 +14,25 @@ import { TrueForge } from '@truefoundry/trueforge-sdk';
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('nipunkalsotra.forgepilot');
   assert.ok(extension, 'ForgePilot must be discovered by VS Code');
-  await extension.activate();
+  assert.equal(extension.extensionPath, process.env.FORGEPILOT_EXPECTED_EXTENSION_PATH);
+  const manifest = extension.packageJSON as { main: string; contributes: { commands: { command: string; title: string }[] } };
+  assert.match(await readFile(path.join(extension.extensionPath, manifest.main), 'utf8'), /forgepilot\.autonomous/);
+  const contributed = manifest.contributes.commands;
+  for (const item of contributed) {
+    assert.match(item.title, /^ForgePilot: /);
+  }
+  // Exercise VS Code's contributed-command activation rather than activating by hand.
+  await vscode.commands.executeCommand('forgepilot.contextInspector');
   assert.ok(extension.isActive);
   const commands = await vscode.commands.getCommands(true);
-  for (const name of ['start', 'ask', 'cancel', 'stop', 'setToken', 'inlineEdit', 'autonomous', 'batchAccept', 'batchReject', 'batchApply', 'batchUndo', 'contextInspector', 'verificationTerminal']) assert.ok(commands.includes(`forgepilot.${name}`));
+  for (const item of contributed) assert.ok(commands.includes(item.command), `Missing registration ${item.command}`);
+  // Empty explicit input exercises the autonomous command without a dialog or model request.
+  await vscode.commands.executeCommand('forgepilot.autonomous', '');
+  if (process.env.TRUEFORGE_AGENT_NAME) await vscode.workspace.getConfiguration('forgepilot').update('agentName', process.env.TRUEFORGE_AGENT_NAME, vscode.ConfigurationTarget.Global);
   await vscode.commands.executeCommand('forgepilot.cancel');
   await vscode.commands.executeCommand('forgepilot.stop');
-  console.log('PASS: VS Code loaded and activated ForgePilot; commands registered; idle cleanup succeeded.');
+  console.log(`PASS: Correct ForgePilot bundle loaded, command-triggered activation, all ${contributed.length} palette contributions/registrations, autonomous invocation, idle cleanup.`);
+  if (process.env.FORGEPILOT_AUTONOMOUS_LIVE === '1') { await autonomousLiveHost((extension.exports as { autonomous: Autonomous }).autonomous); return; }
   if (process.env.FORGEPILOT_PHASE3_FLASK === '1') {
     try { await taskBHost((extension.exports as { autonomous: Autonomous }).autonomous); }
     finally { await vscode.commands.executeCommand('forgepilot.stop'); }

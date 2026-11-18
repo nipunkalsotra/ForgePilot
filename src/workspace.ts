@@ -7,7 +7,10 @@ import { promisify } from 'node:util';
 export const LIMITS = Object.freeze({ fileBytes: 64 * 1024, outputBytes: 96 * 1024, entries: 4000,
   files: 200, depth: 12, matches: 100, lineChars: 500, searchBytes: 4 * 1024 * 1024, milliseconds: 3000 });
 
-export class WorkspaceError extends Error { override name = 'WorkspaceError'; }
+export class WorkspaceError extends Error {
+  override name = 'WorkspaceError';
+  constructor(message: string, readonly code = 'WORKSPACE_FORBIDDEN') { super(message); }
+}
 const deniedDirs = new Set(['node_modules', 'vendor', 'dist', 'build', 'coverage', '__pycache__', 'venv', 'env', 'target']);
 const sensitive = /(^|[._-])(secret[s]?|credential[s]?|password[s]?|token[s]?|private[-_]?key|service[-_]?account)([._-]|$)|\.(pem|key|p12|pfx|p8|jks|keystore|kdbx|sqlite3?|db|log)$/i;
 const sensitiveNames = /^(id_(rsa|dsa|ecdsa|ed25519)(\.pub)?|authorized_keys|known_hosts|config\.json|application_default_credentials\.json|netrc|npmrc|yarnrc|pip\.conf|terraform\.tfstate.*)$/i;
@@ -98,7 +101,7 @@ export class Workspace {
       } finally { await handle.close(); }
     } catch (error) {
       if (error instanceof WorkspaceError) throw error;
-      throw new WorkspaceError('File is unavailable or forbidden.');
+      throw new WorkspaceError('File is unavailable or forbidden.', (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'FILE_NOT_FOUND' : 'WORKSPACE_FORBIDDEN');
     }
   }
 
@@ -116,7 +119,7 @@ export class Workspace {
       }
       throw new WorkspaceError('Creation path is unavailable.');
     }
-    throw new WorkspaceError('Creation target already exists.');
+    throw new WorkspaceError('Creation target already exists.', 'CREATION_TARGET_EXISTS');
   }
 
   async readRange(input: string, start = 1, count = 100): Promise<{ path: string; content: string; start: number; end: number; totalLines: number; truncated: boolean; hash: string; identity: string }> {

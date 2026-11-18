@@ -10,7 +10,7 @@ import { hash } from '../src/patch';
 /** Actual editor integration with explicitly labelled deterministic proposal fixture. */
 export async function batchHostTests(): Promise<void> {
   const root = vscode.workspace.workspaceFolders![0]!.uri.fsPath, before = 'first = 1\nseparator = 0\nsecond = 2\n';
-  const paths = ['batch-a.py', 'batch-b.py', 'batch-c.py'];
+  const paths = ['calculator.py', 'test_calculator.py', 'guide.md'];
   for (const file of paths) await writeFile(path.join(root, file), before);
   const output = vscode.window.createOutputChannel('Batch Host Verification');
   const fake = { async autonomous(store: BatchStore) {

@@ -64,4 +64,18 @@ export class Companion {
       child.kill('SIGTERM');
     });
   }
+
+  async setDraftRequest(requestId?: string): Promise<void> {
+    const child = this.child;
+    if (!child?.connected) { if (!requestId) return; throw new ForgePilotError('Draft companion is unavailable.'); }
+    const id = randomBytes(16).toString('hex');
+    await new Promise<void>((resolve, reject) => {
+      const finish = (ok: boolean) => { clearTimeout(timer); child.off('message', ready); child.off('exit', failed); if (ok) resolve(); else reject(new ForgePilotError('Draft scope control failed.')); };
+      const failed = () => finish(false);
+      const ready = (message: unknown) => { if (message && typeof message === 'object' && 'type' in message && message.type === 'drafts-ready' && 'id' in message && message.id === id) finish('ok' in message && message.ok === true); };
+      const timer = setTimeout(failed, 5000);
+      child.on('message', ready); child.once('exit', failed);
+      child.send({ type: 'drafts', id, ...(requestId ? { requestId } : {}) }, error => { if (error) failed(); });
+    });
+  }
 }

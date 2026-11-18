@@ -19,6 +19,14 @@ async function stop(): Promise<void> {
 process.once('disconnect', () => { void stop(); });
 process.once('SIGTERM', () => { void stop(); });
 process.once('SIGINT', () => { void stop(); });
+process.on('message', (message: unknown) => {
+  if (!message || typeof message !== 'object' || !('type' in message) || message.type !== 'drafts' || !('id' in message) || typeof message.id !== 'string') return;
+  try {
+    if (!server || closing) throw new Error('Companion unavailable');
+    if ('requestId' in message && typeof message.requestId === 'string') server.beginDrafts(message.requestId); else server.invalidateDrafts();
+    process.send?.({ type: 'drafts-ready', id: message.id, ok: true });
+  } catch { process.send?.({ type: 'drafts-ready', id: message.id, ok: false }); }
+});
 process.once('message', (message: unknown) => {
   void (async () => {
     if (typeof message !== 'object' || message === null || !('root' in message) || !('token' in message)

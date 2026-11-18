@@ -5,11 +5,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
 import { autonomousTools } from './autonomous';
+import { DraftStore } from '../drafts';
 import { patchSchema, renderPatch } from '../patch';
 import { LIMITS, Workspace } from '../workspace';
 import { ForgePilotError, publicError, type Logger } from '../log';
 
-function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>): McpServer {
+function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>, drafts: DraftStore): McpServer {
   const mcp = new McpServer({ name: 'forgepilot-workspace', version: '0.1.0' });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   const run = async (tool: string, fn: () => Promise<unknown>) => {
@@ -47,16 +48,17 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean, auton
     renderPatch(file.content, args);
     return { kind: 'forgepilot.patch', patch: args };
   }));
-  if (autonomous) autonomousTools(mcp, workspace, run, contextBudget);
+  if (autonomous) autonomousTools(mcp, workspace, run, contextBudget, drafts);
   return mcp;
 }
 
-export interface RunningServer { url: string; close(): Promise<void> }
+export interface RunningServer { url: string; beginDrafts(requestId: string): void; invalidateDrafts(): void; close(): Promise<void> }
 
 export async function startServer(root: string, token: string, log: Logger, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0): Promise<RunningServer> {
   if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Expected a 256-bit random MCP token');
   if (!Number.isSafeInteger(toolIntervalMs) || toolIntervalMs < 0 || toolIntervalMs > 10000) throw new ForgePilotError('Invalid tool response interval.');
   const workspace = await Workspace.create(root);
+  const drafts = new DraftStore(workspace);
   const pacing = new AbortController();
   let ready = Promise.resolve();
   const pace = () => {
@@ -79,7 +81,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
       if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
       if (active >= 8) { res.writeHead(429).end(); return; }
       active++;
-      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace);
+      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace, drafts);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       transports.add(transport);
       res.once('close', () => { void transport.close(); });
@@ -122,8 +124,10 @@ export async function startServer(root: string, token: string, log: Logger, prop
   log('mcp.listening', { port: address.port });
   return {
     url: `http://127.0.0.1:${address.port}/mcp`,
+    beginDrafts: id => drafts.begin(id),
+    invalidateDrafts: () => drafts.invalidate(),
     async close() {
-      pacing.abort(); workspace.dispose();
+      pacing.abort(); drafts.close(); workspace.dispose();
       await Promise.allSettled([...transports].map(t => t.close()));
       await new Promise<void>(resolve => { http.close(() => resolve()); http.closeAllConnections(); });
       log('mcp.closed');

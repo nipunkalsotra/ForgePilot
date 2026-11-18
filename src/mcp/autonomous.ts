@@ -1,13 +1,13 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ContextEngine } from '../context';
-import { BatchStore, batchSchema, parseBatch } from '../batch';
+import { BatchStore, batchSchema } from '../batch';
+import { DraftStore, checkBatch } from '../drafts';
 import type { Workspace } from '../workspace';
-import { publicError } from '../log';
 
-export const AUTONOMOUS_TOOLS = ['discover_files', 'search_code', 'lookup_symbol', 'read_range', 'context_query', 'check_batch', 'propose_batch'];
+export const AUTONOMOUS_TOOLS = ['discover_files', 'search_code', 'lookup_symbol', 'read_range', 'context_query', 'check_batch', 'propose_batch', 'draft_file', 'check_drafts', 'propose_drafts', 'check_anchor', 'list_drafts'];
 type Run = (tool: string, fn: () => Promise<unknown>) => Promise<{ isError?: boolean; content: { type: 'text'; text: string }[] }>;
-export function autonomousTools(mcp: McpServer, workspace: Workspace, run: Run, budget: number): void {
+export function autonomousTools(mcp: McpServer, workspace: Workspace, run: Run, budget: number, drafts: DraftStore): void {
   const engine = new ContextEngine(workspace, budget);
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   const scope = z.string().max(1024).default('.');
@@ -24,17 +24,25 @@ export function autonomousTools(mcp: McpServer, workspace: Workspace, run: Run, 
   mcp.registerTool('context_query', { description: 'Retrieve ranked structural/lexical source context for a natural-language task without filenames. Finds implementation/test/documentation evidence, import relationships and useful snippets. Supports @file:path and @symbol:name references. Reports estimated token budget, omissions and actual reasons. Start here, then inspect chosen locations with deferred repository tools.',
     inputSchema: { query: z.string().min(1).max(16000), scope }, annotations }, args => run('context_query', () => engine.retrieve(args.query, args.scope)));
   mcp.registerTool('check_batch', { description: 'READ-ONLY preflight of a draft batch. Validates exact original anchors, hashes, paths, variant fields and overlaps. Returns per-file validation feedback so the TrueForge agent can correct its own draft before asking for staging permission. Does NOT stage, approve or apply anything. Use before propose_batch; send the same corrected payload to propose_batch only after every file passes.',
-    inputSchema: batchSchema.shape, annotations }, args => run('check_batch', async () => {
-    const patch = parseBatch(args), files: { path: string; valid: boolean; error?: string }[] = [];
-    for (const file of patch.files) {
-      try { await new BatchStore(workspace).stage({ plan: patch.plan, files: [file] }, true); files.push({ path: file.path, valid: true }); }
-      catch (error) {
-        const escaping = file.operation === 'modify' && file.edits.some(e => e.oldText.includes('\\"'))
-          ? ' Check literal backslash-quote sequences: oldText must match decoded source, not JSON-escaped source. Read the exact short anchor again.' : '';
-        files.push({ path: file.path, valid: false, error: publicError(error) + escaping });
-      }
-    }
-    return { kind: 'forgepilot.check', valid: files.every(f => f.valid), files, approval: 'none: validation only' };
+    inputSchema: { plan: z.string().min(1).max(6000), files: z.array(z.unknown()).min(1).max(12) }, annotations }, args => run('check_batch', () => checkBatch(workspace, args)));
+  const retained = { plan: z.string().min(1).max(6000), draftIds: z.array(z.string().uuid()).min(1).max(12) };
+  mcp.registerTool('list_drafts', { description: 'Recover current retained draft IDs and paths after context compaction without regenerating source edits. No writes or approval. Run check_drafts to revalidate their current hashes before final staging.', inputSchema: {}, annotations }, () => run('list_drafts', async () => drafts.list()));
+  mcp.registerTool('draft_file', { description: 'Validate and retain ONE complete file draft in memory. No writes or approval. Replacing a draft for the same path supersedes its old ID: include all edits for that file together. Returns a short draftId or typed correction guidance. Use exact original anchors and full-file baseHash; never empty oldText. Use check_drafts then propose_drafts with IDs to avoid retransmitting patches.',
+    inputSchema: { operation: z.enum(['modify', 'create']).describe('modify: replace text in an existing file using baseHash/edits. create: absent new file with content only.'), path: z.string().min(1).max(1024),
+      baseHash: z.string().regex(/^[a-f0-9]{64}$/).optional().describe('For modify only: exact full-file hash returned by read_range/context_query. Never invent a hash.'),
+      edits: z.array(z.object({ oldText: z.string().min(1).max(65536).describe('Exact original source anchor; one unique match, never empty.'), newText: z.string().max(65536) })).min(1).max(64).optional().describe('For modify only: all disjoint replacements for this one existing file.'),
+      content: z.string().min(1).max(65536).optional().describe('For create only: complete content of an absent new file. Never combine with baseHash or edits.') },
+    annotations: { ...annotations, idempotentHint: false } }, file => run('draft_file', () => drafts.put(drafts.requestId(), file)));
+  mcp.registerTool('check_drafts', { description: 'Revalidate the selected retained file drafts against current workspace hashes/anchors and report independent errors. No writes, staging or permission. Send all required file IDs, including tests and documentation when requested.',
+    inputSchema: retained, annotations }, args => run('check_drafts', () => drafts.check(drafts.requestId(), args.plan, args.draftIds)));
+  mcp.registerTool('check_anchor', { description: 'Read-only exact original snippet validation. Reports unique match line or typed hash/anchor error without disclosing other contents. Whitespace/newlines/quotes must match; never fuzzy matches.',
+    inputSchema: { path: z.string().min(1).max(1024), baseHash: z.string().regex(/^[a-f0-9]{64}$/), oldText: z.string().min(1).max(65536) }, annotations },
+  args => run('check_anchor', () => drafts.anchor(args.path, args.baseHash, args.oldText)));
+  mcp.registerTool('propose_drafts', { description: 'Stage ONE final complete batch assembled from previously validated draft IDs. Revalidates every file. No writes. Requires genuine TrueForge staging permission and separate developer file/hunk review and application. Finish the turn after a successful proposal response.',
+    inputSchema: retained, annotations: { ...annotations, readOnlyHint: false, idempotentHint: false } }, args => run('propose_drafts', async () => {
+    const patch = drafts.assemble(drafts.requestId(), args.plan, args.draftIds);
+    await new BatchStore(workspace).stage(patch, true);
+    return { kind: 'forgepilot.batch', patch };
   }));
   mcp.registerTool('propose_batch', { description: 'Propose ONE final batch of at most 12 existing-file replacements or explicitly reviewed new files, with a short plan. No writes. Each modify has operation=modify, path, full original baseHash, unique oldText/newText edits. Create has operation=create, path, content; parent must exist and target must not exist. Requires TrueForge staging approval, separate developer hunk review and explicit editor application.',
     inputSchema: batchSchema.shape, annotations: { ...annotations, readOnlyHint: false, idempotentHint: false } }, args => run('propose_batch', async () => {

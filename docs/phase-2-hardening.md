@@ -43,3 +43,7 @@ Fresh `npm audit --json`: **9 high findings**, one underlying advisory, [GHSA-fc
 No Phase 3 implementation began before this gate and its local hardening commit. Changed files: `src/completion.ts`, `src/bridge.ts`, `src/events.ts`, `tests/completion.test.ts`, `tests/approval.test.ts`, this report. Lockfile and CI enforcement are unchanged.
 
 Remaining concurrency limits are unchanged: `WorkspaceEdit` is not an OS transaction or CAS; a concurrent process can race after validation; one saved-agent client at a time; cancellations cannot retract a dispatched user-approved edit. Provider-outage GUI checks and other operating systems remain NOT TESTED.
+
+## 19 November follow-up
+
+The historical audit above records the Stage 1 result. A fresh recovery `npm ci` and `npm audit --json` now report zero findings with the unchanged lockfile. GitHub marks [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) as withdrawn on **18 November 2026**, explaining the advisory-feed change. No dependency code was patched or forced into an incompatible range; the withdrawal is not a ForgePilot security fix. Original gate evidence remains unchanged.

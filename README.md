@@ -16,7 +16,9 @@ Choose **Allow Batch Staging** for TrueForge's proposal tool request. This only 
 
 **Cancel Turn** invalidates both pending inline and autonomous proposals and cancels an active SDK turn. **Open Verification Terminal** opens a normal VS Code terminal in the workspace; the agent has no shell capability. Run project tests there after saving approved edits. File creates are explicitly reviewed, never overwrite an existing target, and require an existing parent directory.
 
-For request/token-limited plans, set `forgepilot.autonomousToolIntervalMs` to space MCP responses; the verification driver uses 10,000 ms. This is cancellable response pacing, not a model retry loop or a guarantee against shared-provider quotas. The default retrieval budget is **12,000 estimated tokens**, configurable with `forgepilot.contextBudget`. Counts are `ceil(UTF-8 bytes / 3)`, include serialized retrieval metadata, and reserve instruction/output space. Transport-sized packages stay below 20,000 characters for the installed TrueForge tool-response limit. This is a per-retrieval budget, not a claim of exact provider tokenization or a global conversation limit. Source is ranked using lexical hits, declaration locations, filename evidence, imports and implementation/test/documentation counterparts. Truncation and omissions are visible. TrueForge's deferred loading keeps inventory, symbol and legacy schemas out of initial context; context, range reads, search and proposal schemas are eager. There is no extension-owned model loop.
+Autonomous generation uses read-only `draft_file` validation for each file. Correcting one file supersedes its previous draft ID; other valid drafts remain in memory. `check_drafts` revalidates the complete set, then `propose_drafts` requests genuine staging permission using short IDs. Exact anchors/hashes and every final file are revalidated; no fuzzy replacement occurs. Legacy `check_batch`/`propose_batch` remain supported.
+
+The verification driver now uses **0 ms** response pacing. Start at 0–1,000 ms when capacity permits; the previous serialized 10,000 ms setting added ten seconds per tool response. Pacing is not a retry loop or a guarantee against quotas. The default retrieval budget is **12,000 estimated tokens**, configurable with `forgepilot.contextBudget`. Counts are `ceil(UTF-8 bytes / 3)`, include serialized retrieval metadata, and reserve instruction/output space. Packages stay below 20,000 characters for the installed TrueForge tool-response limit. This is a per-retrieval budget, not exact provider tokenization or a cumulative conversation limit. The inspector reports actual cumulative TrueForge terminal metrics separately when supplied. Source is ranked using lexical hits, declarations, paths, imports and implementation/test/documentation counterparts. Truncation and omissions are visible. Inventory, symbol and legacy schemas are deferred; context, range reads, search and retained-draft schemas are eager. There is no extension-owned model loop.
 
 Run one live verification at a time against a saved agent. Provider quotas can fail a run; failed completion invalidates the entire pending batch. Failed editor operations attempt guarded restoration of recognized applied portions and report any unsafe/partial state. `WorkspaceEdit` is not a filesystem transaction or a public version CAS. Do not edit the same files concurrently during application. See [architecture](docs/architecture.md), [Phase 2.1 hardening](docs/phase-2-hardening.md) and [Phase 3 verification](docs/phase-3-verification.md).
 
@@ -35,7 +37,7 @@ See [Phase 2 verification](docs/phase-2-verification.md) for actual live session
 
 ## Install and start
 
-Prerequisites: Node.js **22.14+** (22 or 24 recommended), npm, desktop VS Code **1.101+**, and TrueForge **0.185.1** on the same host as the extension host. VS Code 1.101 introduced a Node 22 extension host. Tested on Linux with Node 26.7.0 and VS Code 1.117.0. SDK **0.185.0** is the SDK shipped by TrueForge 0.185.1; their version numbers intentionally differ.
+Prerequisites: Node.js **22.14+** (22 or 24 recommended), npm, desktop VS Code **1.101+**, and TrueForge **0.185.1** on the same host as the extension host. VS Code 1.101 introduced a Node 22 extension host. Strict checks passed on Linux with Node 22.23.5, 24.22.3 and 26.7.0; actual host tests used VS Code 1.117.0. SDK **0.185.0** is the SDK shipped by TrueForge 0.185.1; their version numbers intentionally differ.
 
 ```sh
 npm ci
@@ -43,6 +45,17 @@ npm run build
 npm run lint
 npm test
 ```
+
+Opening this repository in an ordinary VS Code window does **not** install the extension. Choose either:
+
+- **Development:** open this repository and press F5, choosing **ForgePilot: Extension Development Host**. Use ForgePilot commands in the **new Development Host window**. The launch task builds the current sources first.
+- **Local installation:** run `npm run package:extension`, then `code --install-extension ./artifacts/forgepilot.vsix --force`, then **Developer: Reload Window** in the intended normal VS Code profile. Packaging builds via `vscode:prepublish`; it does not publish anything. Use your actual VS Code CLI path if `code` points to another installation.
+
+Confirm `code --list-extensions --show-versions` contains `nipunkalsotra.forgepilot@0.1.0`. Trust the local workspace and search the Command Palette for **ForgePilot:**. Titles include **Start Read-Only Session**, **Stop Session and MCP Server**, **Autonomous Agent**, **Inspect Repository Context**, **Apply Accepted Batch Hunks**, and **Undo Last Accepted Batch**. Check **Developer: Show Running Extensions** and **ForgePilot Logs** if activation fails. The host regression checks every contributed command and command-triggered activation; physical clicks are a separate manual check.
+
+To use the configured OpenRouter agent, set the machine-scoped `forgepilot.agentName` to `forge-coder-openrouter`, then stop/start the session. Its actual registered model is `openrouter/nemotron-3-ultra-free`; credentials and endpoints stay in TrueForge. The original `forge-coder` agent is preserved. `node --import tsx scripts/setup-openrouter.ts` validates the existing registered model and installs generic retained-draft instructions/security settings on the OpenRouter agent only; it never creates a provider or changes credentials. Its checked-in definition is `config/forge-coder-openrouter.agent.json`.
+
+For isolated host verification, set `TRUEFORGE_AGENT_NAME=forge-coder-openrouter`; the test driver selects it inside the disposable VS Code profile. `FORGEPILOT_AUTONOMOUS_LIVE=1` enables the genuine three-file fixture; `FORGEPILOT_PHASE3_FLASK=1` enables pinned Flask Task B with `FORGEPILOT_FLASK_ROOT` and `FORGEPILOT_FLASK_PYTHON`. These checks make real TrueForge requests. See [recovery evidence](docs/phase-3-recovery.md).
 
 In a separate terminal, start TrueForge with the **exact-host loopback exception** required by its outbound URL guard:
 
@@ -153,7 +166,7 @@ VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 FORGEPILOT_EXTENSION_LIVE=1 VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 ```
 
-Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. The default host test activates the real extension and tests actual inline and multi-file editor diff/application/undo APIs using labelled proposal fixtures; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives the production start/ask/stop commands against the real local saved agent and checks persisted MCP file contents. It currently targets the default local URL and `forge-coder` agent.
+Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. The default host test activates the real extension and tests actual inline and multi-file editor diff/application/undo APIs using labelled proposal fixtures; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives production start/ask/stop against the real local saved agent and checks persisted MCP file contents. Tests default to the local URL and `forge-coder`; `TRUEFORGE_AGENT_NAME` selects a saved agent in the disposable profile. `FORGEPILOT_EXTENSION_PATH` can point at an installed VSIX's extension directory to check its actual bundle and contributions with the same host regression.
 
 Live verification uses disposable temporary fixtures, including an unpredictable file marker. It requires both actual companion tool logs and correlated persisted MCP history; there is no mock model fallback. It compares SHA-256 file snapshots before/after and leaves the TrueForge session for inspection. Results are written to ignored `artifacts/live-verification.json`. The GUI test uses a disposable profile and workspace. These checks can incur your configured provider's normal charges.
 

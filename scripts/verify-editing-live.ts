@@ -13,7 +13,7 @@ const content = 'export const first = 1;\n// separator\nexport const second = 2;
 await writeFile(path.join(root, 'sample.ts'), content);
 const evidence: Record<string, unknown> = { timestamp: new Date().toISOString(), approvalDriver: 'automated verification; not manual UI interaction' };
 const bridge = new Bridge({ baseUrl: process.env.TRUEFORGE_BASE_URL ?? 'http://localhost:8790', token: process.env.TRUEFORGE_TOKEN,
-  agentName: 'forge-coder', root, childPath: path.resolve('dist/mcp-child.cjs'), proposals: true,
+  agentName: process.env.TRUEFORGE_AGENT_NAME ?? 'forge-coder', root, childPath: path.resolve('dist/mcp-child.cjs'), proposals: true,
   log: (event, fields) => console.log(JSON.stringify({ event, ...fields })) });
 const store = () => new PatchStore(workspace, { path: 'sample.ts', content, version: 1, start: 0, end: content.length });
 const workspace = await Workspace.create(root);

@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import type { TrueForgeApi } from '@truefoundry/trueforge-sdk';
 import path from 'node:path';
 import type { Bridge } from './bridge';
 import { Workspace } from './workspace';
@@ -59,11 +60,12 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
   private epoch = 0;
   private contexts: ContextPackage[] = [];
   private responseTokens = 0;
+  private actualUsage?: TrueForgeApi.TurnMetrics;
   private activityOmitted = 0;
   private activity: { tool: string; callId: string; result: unknown; responseBytes: number }[] = [];
   constructor(private readonly connect: () => Promise<{ bridge: Bridge; root: string }>, private readonly output: vscode.OutputChannel, private readonly scheme = 'forgepilot-agent') {}
   get current() { return this.store?.current; }
-  get evidence() { return structuredClone({ contexts: this.contexts, activity: this.activity, workspaceResponseEstimatedTokens: this.responseTokens, activityOmitted: this.activityOmitted, budgetScope: 'Each context_query package is budgeted; cumulative workspace tool response estimates are shown separately and exclude provider messages/output.' }); }
+  get evidence() { return structuredClone({ contexts: this.contexts, activity: this.activity, actualTrueForgeTurnMetrics: this.actualUsage, workspaceResponseEstimatedTokens: this.responseTokens, activityOmitted: this.activityOmitted, budgetScope: 'Each context_query package is budgeted; cumulative workspace tool response estimates are shown separately and exclude provider messages/output.' }); }
   getChildren(parent?: ReviewNode): ReviewNode[] {
     const p = this.current;
     if (!p) return [];
@@ -85,7 +87,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
   async run(instruction?: string, approval?: (patch: BatchPatch, signal: AbortSignal) => Promise<boolean>, answer?: (question: { question: string; options: string[] }, signal: AbortSignal) => Promise<string | undefined>): Promise<void> {
     if (this.busy) throw new ForgePilotError('An autonomous operation is already running.');
     this.cancel(); const epoch = this.epoch; this.busy = true;
-    this.contexts = []; this.activity = []; this.responseTokens = 0; this.activityOmitted = 0;
+    this.contexts = []; this.activity = []; this.responseTokens = 0; this.activityOmitted = 0; this.actualUsage = undefined;
     try {
       instruction ??= await vscode.window.showInputBox({ title: 'ForgePilot — Autonomous Agent', prompt: 'Describe the coding task; optional @file:path or @symbol:name references', ignoreFocusOut: true,
         validateInput: text => !text.trim() || text.length > 16000 ? 'Enter 1–16,000 characters.' : undefined });
@@ -93,6 +95,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
       const { bridge, root } = await this.connect();
       if (epoch !== this.epoch) return;
       const workspace = await Workspace.create(root), host = new VsCodeEditorHost(root);
+      if (epoch !== this.epoch) { workspace.dispose(); return; }
       const store = new BatchStore(workspace, (p, op) => host.snapshot(p, op));
       this.store = store; this.coordinator = new EditCoordinator(host);
       this.output.show(true); this.output.appendLine(`\n[autonomous request; session ${bridge.sessionId}]`);
@@ -114,7 +117,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
             const response = question.options.length ? await vscode.window.showQuickPick(question.options, { title: question.question }) : await vscode.window.showInputBox({ title: 'ForgePilot agent question', prompt: question.question, ignoreFocusOut: true });
             return signal.aborted || epoch !== this.epoch ? undefined : response;
           }));
-        } finally { subscription.dispose(); }
+        } finally { this.actualUsage = bridge.lastTurnMetrics; this.refreshInspector(); subscription.dispose(); }
       });
       if (epoch !== this.epoch) { store.cancel(); return; }
       this.changed.fire();

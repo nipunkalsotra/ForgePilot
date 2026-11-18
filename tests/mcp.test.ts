@@ -105,7 +105,7 @@ test('autonomous MCP exposes secure retrieval and no-write multi-file proposal t
   const client = new Client({ name: 'autonomous-test', version: '1' });
   try {
     await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
-    assert.equal((await client.listTools()).tools.length, 10);
+    assert.equal((await client.listTools()).tools.length, 15);
     for (const [name, args] of [['discover_files', { query: 'commands' }], ['lookup_symbol', { name: 'config_command' }], ['context_query', { query: 'config command' }], ['read_range', { path: 'commands.py', start: 1, count: 2 }]] as const) {
       const result = await client.callTool({ name, arguments: args }); assert.ok(!result.isError, JSON.stringify(result));
     }
@@ -116,6 +116,21 @@ test('autonomous MCP exposes secure retrieval and no-write multi-file proposal t
     assert.equal((JSON.parse((invalid.content as { type: string; text: string }[])[0]!.text) as { valid: boolean }).valid, false);
     const result = await client.callTool({ name: 'propose_batch', arguments: draft });
     assert.ok(!result.isError); assert.match(JSON.stringify(result), /forgepilot.batch/);
+    const requestId = crypto.randomUUID(), draftIds: string[] = [];
+    server.beginDrafts(requestId);
+    for (const file of draft.files) {
+      const response = await client.callTool({ name: 'draft_file', arguments: { ...file } });
+      const saved = JSON.parse((response.content as { type: string; text: string }[])[0]!.text) as { valid: boolean; draftId: string };
+      assert.equal(saved.valid, true); draftIds.push(saved.draftId);
+    }
+    const checked = await client.callTool({ name: 'check_drafts', arguments: { plan: draft.plan, draftIds } });
+    assert.equal((JSON.parse((checked.content as { type: string; text: string }[])[0]!.text) as { valid: boolean }).valid, true);
+    const listing = await client.callTool({ name: 'list_drafts', arguments: {} });
+    for (const id of draftIds) assert.ok(JSON.stringify(listing).includes(id));
+    const retained = await client.callTool({ name: 'propose_drafts', arguments: { plan: draft.plan, draftIds } });
+    assert.ok(!retained.isError); assert.match(JSON.stringify(retained), /forgepilot.batch/);
+    server.invalidateDrafts();
+    assert.equal((await client.callTool({ name: 'propose_drafts', arguments: { plan: draft.plan, draftIds } })).isError, true);
     for (const file of ['commands.py', 'tests.py', 'guide.md']) assert.equal(await readFile(path.join(root, file), 'utf8'), content);
     assert.equal((await client.callTool({ name: 'read_range', arguments: { path: '../outside', start: 1, count: 2 } })).isError, true);
   } finally { await client.close(); await server.close(); await rm(root, { recursive: true, force: true }); }

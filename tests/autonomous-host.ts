@@ -19,10 +19,14 @@ export async function taskBHost(agent: Autonomous): Promise<void> {
   const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   assert.equal(commit, '22d924701a6ae2e4cd01e9a15bbaf3946094af65');
   await vscode.workspace.getConfiguration('forgepilot').update('turnTimeoutSeconds', 600, vscode.ConfigurationTarget.Global);
-  await vscode.workspace.getConfiguration('forgepilot').update('autonomousToolIntervalMs', 10000, vscode.ConfigurationTarget.Global);
+  const toolIntervalMs = Number(process.env.FORGEPILOT_TEST_TOOL_INTERVAL_MS ?? 0);
+  assert.ok(Number.isInteger(toolIntervalMs) && toolIntervalMs >= 0 && toolIntervalMs <= 10000);
+  await vscode.workspace.getConfiguration('forgepilot').update('autonomousToolIntervalMs', toolIntervalMs, vscode.ConfigurationTarget.Global);
   const instruction = `${TASK_B}\nMatch sensitive key names case-insensitively. Output must be parseable JSON; do not expose sensitive values through errors or logs. Deliver implementation, automated tests and documentation together. Existing application defaults must serialize to valid JSON.`;
   const evidence: Record<string, unknown> = { timestamp: new Date().toISOString(), commit, initialStatus, instruction,
-    toolIntervalMs: 10000, approvalDriver: 'automated explicit host decisions; human clicks NOT TESTED' };
+    toolIntervalMs, approvalDriver: 'automated explicit host decisions; human clicks NOT TESTED' };
+  const stagingDecisions: unknown[] = [], hunkDecisions: unknown[] = [];
+  evidence.stagingDecisions = stagingDecisions; evidence.hunkDecisions = hunkDecisions;
   let approved = 0;
   const agentName = vscode.workspace.getConfiguration('forgepilot').get<string>('agentName', 'forge-coder');
   for await (const candidate of await client.agents.list({ agentName })) if (candidate.name === agentName) { evidence.agent = agentName; evidence.model = (await client.agents.get(candidate.id)).data.manifest.model.name; break; }
@@ -31,6 +35,7 @@ export async function taskBHost(agent: Autonomous): Promise<void> {
       approved++;
       assert.equal(execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }), '', 'Staging permission must not modify disk');
       assert.ok(batch.files.length >= 3, 'Autonomous agent must propose at least three files');
+      stagingDecisions.push({ at: new Date().toISOString(), decision: 'allow staging', paths: batch.files.map(f => f.path) });
       return true;
     }, async question => question.options[0] ?? 'Proceed with the requested task.');
     assert.equal(approved, 1);
@@ -44,7 +49,10 @@ export async function taskBHost(agent: Autonomous): Promise<void> {
       assert.ok(tab?.input instanceof vscode.TabInputTextDiff);
       assert.equal((await vscode.workspace.openTextDocument(tab.input.original)).getText(), file.before);
       assert.equal((await vscode.workspace.openTextDocument(tab.input.modified)).getText(), file.proposed);
-      for (const hunk of file.hunks) await vscode.commands.executeCommand('forgepilot.batchAccept', { fileId: file.id, hunkId: hunk.id });
+      for (const hunk of file.hunks) {
+        await vscode.commands.executeCommand('forgepilot.batchAccept', { fileId: file.id, hunkId: hunk.id });
+        hunkDecisions.push({ at: new Date().toISOString(), path: file.path, fileId: file.id, hunkId: hunk.id, decision: 'accepted' });
+      }
     }
     assert.ok(agent.current!.files.every(f => f.hunks.every(h => h.decision === 'accepted')));
     await agent.apply();
