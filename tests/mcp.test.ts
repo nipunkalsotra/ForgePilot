@@ -36,6 +36,7 @@ test('real MCP HTTP discovery, tools, policy errors, authentication and shutdown
       const result = await client.callTool({ name, arguments: args });
       assert.ok(!result.isError);
       assert.match(JSON.stringify(result), /sample.txt/);
+      if (name === 'read_file') assert.deepEqual(Object.keys(JSON.parse((result.content as { type: string; text: string }[])[0]!.text)).sort(), ['bytes', 'content', 'path']);
     }
     const denied = await client.callTool({ name: 'read_file', arguments: { path: '../etc/passwd' } });
     assert.equal(denied.isError, true);
@@ -92,5 +93,49 @@ test('opt-in proposal MCP validates structured edits and never writes files', as
     for (const arguments_ of [{ ...args, path: '../outside' }, { ...args, baseHash: '0'.repeat(64) }, { ...args, edits: [{ oldText: 'missing', newText: 'x' }] }])
       assert.equal((await client.callTool({ name: 'propose_patch', arguments: arguments_ })).isError, true);
     assert.equal(await readFile(path.join(root, 'source.ts'), 'utf8'), content);
+  } finally { await client.close(); await server.close(); await rm(root, { recursive: true, force: true }); }
+});
+
+test('autonomous MCP exposes secure retrieval and no-write multi-file proposal transport', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-agent-mcp-'));
+  const content = 'def config_command():\n    return 1\n';
+  for (const file of ['commands.py', 'tests.py', 'guide.md']) await writeFile(path.join(root, file), content);
+  const token = randomBytes(32).toString('hex');
+  const server = await startServer(root, token, () => {}, false, true);
+  const client = new Client({ name: 'autonomous-test', version: '1' });
+  try {
+    await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
+    assert.equal((await client.listTools()).tools.length, 10);
+    for (const [name, args] of [['discover_files', { query: 'commands' }], ['lookup_symbol', { name: 'config_command' }], ['context_query', { query: 'config command' }], ['read_range', { path: 'commands.py', start: 1, count: 2 }]] as const) {
+      const result = await client.callTool({ name, arguments: args }); assert.ok(!result.isError, JSON.stringify(result));
+    }
+    const draft = { plan: 'Update related files', files: ['commands.py', 'tests.py', 'guide.md'].map(file => ({ operation: 'modify', path: file, baseHash: hash(content), edits: [{ oldText: 'return 1', newText: 'return 2' }] })) };
+    const check = await client.callTool({ name: 'check_batch', arguments: draft });
+    assert.match(JSON.stringify(check), /forgepilot.check/); assert.match(JSON.stringify(check), /validation only/);
+    const invalid = await client.callTool({ name: 'check_batch', arguments: { ...draft, files: [{ ...draft.files[0]!, edits: [{ oldText: 'does not exist', newText: 'replacement' }] }] } });
+    assert.equal((JSON.parse((invalid.content as { type: string; text: string }[])[0]!.text) as { valid: boolean }).valid, false);
+    const result = await client.callTool({ name: 'propose_batch', arguments: draft });
+    assert.ok(!result.isError); assert.match(JSON.stringify(result), /forgepilot.batch/);
+    for (const file of ['commands.py', 'tests.py', 'guide.md']) assert.equal(await readFile(path.join(root, file), 'utf8'), content);
+    assert.equal((await client.callTool({ name: 'read_range', arguments: { path: '../outside', start: 1, count: 2 } })).isError, true);
+  } finally { await client.close(); await server.close(); await rm(root, { recursive: true, force: true }); }
+});
+
+test('optional autonomous tool pacing spaces responses without changing file contents', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-paced-mcp-'));
+  await writeFile(path.join(root, 'source.py'), 'value = 1\n');
+  const token = randomBytes(32).toString('hex');
+  const server = await startServer(root, token, () => {}, false, true, 12000, 60);
+  const client = new Client({ name: 'pacing-test', version: '1' });
+  try {
+    await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
+    const completed: number[] = [];
+    await Promise.all([1, 2].map(async () => {
+      const result = await client.callTool({ name: 'read_range', arguments: { path: 'source.py', start: 1, count: 1 } });
+      assert.ok(!result.isError); completed.push(Date.now());
+    }));
+    completed.sort((a, b) => a - b);
+    assert.ok(completed[1]! - completed[0]! >= 40, 'Responses must occupy distinct pacing slots');
+    assert.equal(await readFile(path.join(root, 'source.py'), 'utf8'), 'value = 1\n');
   } finally { await client.close(); await server.close(); await rm(root, { recursive: true, force: true }); }
 });

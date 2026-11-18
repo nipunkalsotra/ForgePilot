@@ -2,6 +2,9 @@ import * as vscode from 'vscode';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { batchHostTests } from './batch-host';
+import { taskBHost } from './autonomous-host';
+import type { Autonomous } from '../src/autonomous';
 import { editingHostTests, flaskHostTest } from './editing-host';
 import type { Editing } from '../src/editing';
 import { TrueForge } from '@truefoundry/trueforge-sdk';
@@ -13,16 +16,21 @@ export async function run(): Promise<void> {
   await extension.activate();
   assert.ok(extension.isActive);
   const commands = await vscode.commands.getCommands(true);
-  for (const name of ['start', 'ask', 'cancel', 'stop', 'setToken']) assert.ok(commands.includes(`forgepilot.${name}`));
+  for (const name of ['start', 'ask', 'cancel', 'stop', 'setToken', 'inlineEdit', 'autonomous', 'batchAccept', 'batchReject', 'batchApply', 'batchUndo', 'contextInspector', 'verificationTerminal']) assert.ok(commands.includes(`forgepilot.${name}`));
   await vscode.commands.executeCommand('forgepilot.cancel');
   await vscode.commands.executeCommand('forgepilot.stop');
   console.log('PASS: VS Code loaded and activated ForgePilot; commands registered; idle cleanup succeeded.');
+  if (process.env.FORGEPILOT_PHASE3_FLASK === '1') {
+    try { await taskBHost((extension.exports as { autonomous: Autonomous }).autonomous); }
+    finally { await vscode.commands.executeCommand('forgepilot.stop'); }
+    return;
+  }
   if (process.env.FORGEPILOT_PHASE2_FLASK === '1') {
     try { await flaskHostTest((extension.exports as { editing: Editing }).editing); }
     finally { await vscode.commands.executeCommand('forgepilot.stop'); }
     return;
   }
-  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); return; }
+  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); await batchHostTests(); return; }
   const client = new TrueForge({ baseUrl: 'http://localhost:8790', maxRetries: 0, timeoutInSeconds: 10 });
   const oldSessions = new Set((await client.sessions.list()).data.map(s => s.id));
   const connectorsBefore = (await client.mcpServers.list()).data.map(s => s.name).sort();

@@ -4,16 +4,19 @@ import { createServer, type ServerResponse } from 'node:http';
 import { mkdtemp, writeFile, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { BatchStore } from '../src/batch';
+import { AUTONOMOUS_TOOLS } from '../src/mcp/autonomous';
 import { Bridge } from '../src/bridge';
 import { PatchStore, hash } from '../src/patch';
 import { Workspace } from '../src/workspace';
 
 /** Explicit SDK wire fixture. Live model evidence comes from verify-editing-live.ts. */
-async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'after-error' | 'incomplete' | 'missing-terminal' | 'late-terminal' | 'approval-error' | 'output-error') {
+async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'after-error' | 'incomplete' | 'missing-terminal' | 'late-terminal' | 'approval-error' | 'output-error' | 'question-only' | 'wrong-source-cache' | 'truncated-output', autonomous = false) {
   const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-approval-'));
   const content = 'const value = 1;\n';
   await writeFile(path.join(root, 'file.ts'), content);
   const patch = { path: 'file.ts', baseHash: hash(content), edits: [{ oldText: '1', newText: '2' }] };
+  const batchPatch = { plan: 'Update discovered code', files: [{ operation: 'modify', ...patch }] };
   const manifest: Record<string, unknown> = { model: { name: 'fixture/model' }, config: { sandbox: { enabled: false }, dynamic_sub_agents: { enabled: false }, web_search: { enabled: false }, memory: { enabled: false }, generative_ui: { enabled: false } } };
   const agent = { id: 'agent', name: 'forge-coder', manifest };
   const requests: { path: string; body: Record<string, unknown> }[] = [];
@@ -25,11 +28,11 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'afte
   const send = (event: object) => held?.write(`data: ${JSON.stringify({ created_at: new Date().toISOString(), thread_id: 'main', id: crypto.randomUUID(), ...event })}\n\n`);
   const done = () => {
     if (mode === 'missing-terminal') { held?.end(); return; }
-    send({ type: 'turn.done', state: mode === 'after-error' ? { status: 'error', completed_at: new Date().toISOString(), message: 'fixture provider failure' } : { status: 'done', completed_at: new Date().toISOString(), output: null, required_actions: mode === 'incomplete' ? [{ type: 'tool.approval_required', id: 'pending', thread_id: 'main', created_at: '', tool_calls: [] }] : [] } });
+    send({ type: 'turn.done', state: mode === 'after-error' ? { status: 'error', completed_at: new Date().toISOString(), message: 'fixture provider failure' } : { status: 'done', completed_at: new Date().toISOString(), output: mode === 'truncated-output' ? { type: 'model.message', id: 'final-output', created_at: new Date().toISOString(), thread_id: 'main', content: 'partial', finish_reason: 'length' } : null, required_actions: mode === 'incomplete' ? [{ type: 'tool.approval_required', id: 'pending', thread_id: 'main', created_at: '', tool_calls: [] }] : [] } });
     if (mode === 'late-terminal') send({ type: 'model.message.delta', content: 'late output' });
     held?.end();
   };
-  const source = () => ({ type: 'model.message', id: 'source', created_at: new Date().toISOString(), thread_id: 'main', content: null, tool_calls: [{ id: 'call', type: 'function', function: { name: 'propose_patch', arguments: JSON.stringify(mode === 'malformed' ? { bad: true } : patch) }, tool_info: { type: 'mcp', name: 'propose_patch', server_id: connector, server_name: connector } }] });
+  const source = () => mode === 'question-only' ? { type: 'model.message', id: 'source', created_at: new Date().toISOString(), thread_id: 'main', tool_calls: [{ id: 'call', type: 'function', function: { name: 'ask_user_question', arguments: JSON.stringify({ question: 'Proceed with discovery?', options: ['Proceed'] }) }, tool_info: { type: 'truefoundry-system', name: 'ask_user_question' } }] } : ({ type: 'model.message', id: 'source', created_at: new Date().toISOString(), thread_id: 'main', content: null, tool_calls: [{ id: 'call', type: 'function', function: { name: autonomous ? 'call_tool' : 'propose_patch', arguments: JSON.stringify(mode === 'malformed' ? { bad: true } : autonomous ? { mcp_server: connector, tool_name: 'propose_batch', input: batchPatch } : patch) }, tool_info: autonomous ? { type: 'truefoundry-system', name: 'call_tool' } : { type: 'mcp', name: 'propose_patch', server_id: connector, server_name: connector } }] });
   const http = createServer((req, res) => { void (async () => {
     const buffers = []; for await (const b of req) buffers.push(b);
     const body = JSON.parse(Buffer.concat(buffers).toString() || '{}') as Record<string, unknown>;
@@ -39,17 +42,18 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'afte
     if (pathname === '/api/v1/agents/agent') { if (req.method === 'PUT') Object.assign(manifest, body.manifest); return json({ data: agent }); }
     if (pathname === '/api/v1/settings/mcp-servers') { connector = (body.manifest as { name: string }).name; return json({ data: body }); }
     if (pathname.startsWith('/api/v1/settings/mcp-servers/')) return json({});
-    if (pathname.endsWith('/tools')) return json({ data: ['list_files', 'read_file', 'search_workspace', 'propose_patch'].map(name => ({ name })) });
+    if (pathname.endsWith('/tools')) return json({ data: ['list_files', 'read_file', 'search_workspace', ...(autonomous ? AUTONOMOUS_TOOLS : ['propose_patch'])].map(name => ({ name })) });
     if (pathname === '/api/v1/sessions') return json({ data: { id: 'session', agent: { type: 'reference', name: 'forge-coder', id: 'agent' }, metadata: {}, metrics: {}, source: null } });
     if (pathname.endsWith('/cancel')) { held?.end(); return json({ data: {} }); }
     if (pathname.endsWith('/events') && req.method === 'GET') return json({ data: [{ turn_id: 'turn', event: source() }], pagination: { limit: 50 } });
     if (pathname.endsWith('/events') && req.method === 'POST') {
       json({ data: [] });
-      const events = body.events as { approval: { status: string } }[];
-      if (events[0]?.approval.status === 'allow') {
+      const events = body.events as { type: string; approval?: { status: string } }[];
+      if (events[0]?.type === 'user.tool_response') { done(); return; }
+      if (events[0]?.approval?.status === 'allow') {
         toolExecuted = true; executionReady();
         if (mode === 'delayed') return;
-        send({ type: 'tool.response', tool_call_id: 'call', content: JSON.stringify({ kind: 'forgepilot.patch', patch }) }); done();
+        send({ type: 'tool.response', tool_call_id: 'call', content: JSON.stringify(autonomous ? { kind: 'forgepilot.batch', patch: batchPatch } : { kind: 'forgepilot.patch', patch }) }); done();
       }
       return;
     }
@@ -58,8 +62,9 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'afte
       send({ type: 'turn.created', turn_id: 'turn', previous_turn_id: null, state: { status: 'running' } });
       if (mode === 'output-error') send({ type: 'model.message.delta', content: 'apparently successful response' });
       if (mode === 'error' || mode === 'output-error') { send({ type: 'turn.done', state: { status: 'error', completed_at: new Date().toISOString(), message: 'fixture provider error' } }); res.end(); return; }
+      if (mode === 'wrong-source-cache') send({ ...source(), id: 'wrong-cached-source' });
       // Deliberately omit model.message on SSE: exercise real 0.185.1 source-event lookup.
-      send({ type: 'tool.approval_required', tool_calls: [{ id: 'call', source_event_id: 'source' }] });
+      send({ type: mode === 'question-only' ? 'tool.response_required' : 'tool.approval_required', tool_calls: [{ id: 'call', source_event_id: 'source' }] });
       if (mode === 'approval-error') send({ type: 'turn.done', state: { status: 'error', completed_at: '', message: 'failed during approval' } });
       return;
     }
@@ -67,10 +72,10 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'afte
   })().catch(() => res.writeHead(500).end()); });
   await new Promise<void>(resolve => http.listen(0, '127.0.0.1', resolve));
   const address = http.address(); assert.ok(address && typeof address === 'object');
-  const bridge = new Bridge({ baseUrl: `http://127.0.0.1:${address.port}`, agentName: 'forge-coder', root, proposals: true, childPath: path.resolve('dist/mcp-child.cjs'), log: () => {} });
+  const bridge = new Bridge({ baseUrl: `http://127.0.0.1:${address.port}`, agentName: 'forge-coder', root, proposals: !autonomous, autonomous, childPath: path.resolve('dist/mcp-child.cjs'), log: () => {} });
   const store = new PatchStore(await Workspace.create(root), { path: 'file.ts', content, version: 1, start: 0, end: content.length });
-  return { bridge, store, requests, execution, executed: () => toolExecuted, unchanged: async () => assert.equal(await readFile(path.join(root, 'file.ts'), 'utf8'), content),
-    late: () => { send({ type: 'tool.response', tool_call_id: 'call', content: JSON.stringify({ kind: 'forgepilot.patch', patch }) }); done(); },
+  return { bridge, store, batchStore: new BatchStore(store.workspace), requests, execution, executed: () => toolExecuted, unchanged: async () => assert.equal(await readFile(path.join(root, 'file.ts'), 'utf8'), content),
+    late: () => { send({ type: 'tool.response', tool_call_id: 'call', content: JSON.stringify(autonomous ? { kind: 'forgepilot.batch', patch: batchPatch } : { kind: 'forgepilot.patch', patch }) }); done(); },
     async close() { await bridge.stop(); await new Promise<void>(resolve => { http.close(() => resolve()); http.closeAllConnections(); }); await rm(root, { recursive: true, force: true }); } };
 }
 test('SDK approval: exact persisted source, genuine approval input then staging; hunk review is separate', async () => {
@@ -118,7 +123,7 @@ test('SDK approval: cancel after allow ignores delayed tool result', async () =>
 });
 
 test('unsuccessful completion after staged patch always invalidates proposal', async () => {
-  for (const mode of ['after-error', 'incomplete', 'missing-terminal', 'late-terminal'] as const) {
+  for (const mode of ['after-error', 'incomplete', 'missing-terminal', 'late-terminal', 'truncated-output'] as const) {
     const f = await fixture(mode); try {
       await f.bridge.start();
       await assert.rejects(f.bridge.propose(f.store, 'change', () => {}, async () => true), /failed|complet|terminal/);
@@ -137,4 +142,62 @@ test('failure during approval or after model output cannot become a proposal', a
       assert.equal(f.store.current, undefined); await f.unchanged();
     } finally { await f.close(); }
   }
+});
+
+test('autonomous SDK contract correlates deferred batch approval and terminal success', async () => {
+  const f = await fixture('valid', true); try {
+    await f.bridge.start(); const responseBytes: number[] = [];
+    await f.bridge.autonomous(f.batchStore, 'Update the implementation', () => {}, async () => true, event => responseBytes.push(event.responseBytes));
+    assert.ok(responseBytes.length === 1 && responseBytes[0]! > 0);
+    assert.equal(f.batchStore.current!.generationSucceeded, true); assert.equal(f.batchStore.current!.files.length, 1);
+    assert.equal(f.batchStore.current!.files[0]!.hunks[0]!.decision, 'pending'); await f.unchanged();
+  } finally { await f.close(); }
+});
+test('autonomous generation failure and rejected approval cannot leave an applicable batch', async () => {
+  for (const mode of ['after-error', 'valid'] as const) {
+    const f = await fixture(mode, true); try {
+      await f.bridge.start(); await assert.rejects(f.bridge.autonomous(f.batchStore, 'change', () => {}, async () => mode !== 'valid'));
+      assert.throws(() => f.batchStore.accepted()); await f.unchanged();
+    } finally { await f.close(); }
+  }
+});
+test('autonomous cancellation after allow ignores delayed batch tool results', async () => {
+  const f = await fixture('delayed', true); try {
+    await f.bridge.start();
+    const turn = f.bridge.autonomous(f.batchStore, 'change', () => {}, async () => true);
+    const rejected = assert.rejects(turn, /cancelled/); await f.execution; await f.bridge.cancel(); f.late(); await rejected;
+    assert.throws(() => f.batchStore.complete()); assert.equal(f.batchStore.current, undefined); await f.unchanged();
+  } finally { await f.close(); }
+});
+
+test('answering a genuine SDK question never grants batch staging or hunk approval', async () => {
+  const f = await fixture('question-only', true); try {
+    await f.bridge.start();
+    await assert.rejects(f.bridge.autonomous(f.batchStore, 'change', () => {}, async () => { assert.fail('No staging approval should occur'); }, () => {}, async () => 'Proceed'), /No successful batch/);
+    assert.equal(f.batchStore.current, undefined); await f.unchanged();
+    assert.ok(f.requests.some(r => JSON.stringify(r.body).includes('user.tool_response')));
+    assert.ok(!f.requests.some(r => JSON.stringify(r.body).includes('"status":"allow"')));
+  } finally { await f.close(); }
+});
+
+test('approval source-event mismatch is rejected before any human approval or staging', async () => {
+  for (const autonomous of [false, true]) {
+    const f = await fixture('wrong-source-cache', autonomous); try {
+      await f.bridge.start();
+      const approve = async () => { assert.fail('Mismatched source must not reach human approval'); };
+      await assert.rejects(autonomous ? f.bridge.autonomous(f.batchStore, 'change', () => {}, approve) : f.bridge.propose(f.store, 'change', () => {}, approve), /source event does not match/);
+      assert.equal(f.executed(), false); assert.equal(f.store.current, undefined); assert.equal(f.batchStore.current, undefined); await f.unchanged();
+    } finally { await f.close(); }
+  }
+});
+
+test('autonomous cancellation while human approval is pending ignores a delayed allow', async () => {
+  const f = await fixture('valid', true); try {
+    await f.bridge.start(); let arrived!: () => void, release!: (allow: boolean) => void;
+    const waiting = new Promise<void>(resolve => { arrived = resolve; });
+    const turn = f.bridge.autonomous(f.batchStore, 'change', () => {}, async () => { arrived(); return new Promise<boolean>(resolve => { release = resolve; }); });
+    const rejected = assert.rejects(turn, /cancelled/); await waiting; await f.bridge.cancel(); release(true); await rejected;
+    assert.equal(f.executed(), false); assert.equal(f.batchStore.current, undefined); await f.unchanged();
+    assert.ok(!f.requests.some(r => JSON.stringify(r.body).includes('"status":"allow"')));
+  } finally { await f.close(); }
 });

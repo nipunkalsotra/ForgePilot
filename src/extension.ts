@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Bridge } from './bridge';
+import { Autonomous, type ReviewNode } from './autonomous';
 import { Editing } from './editing';
 import type { Hunk } from './patch';
 import { ForgePilotError, jsonLogger, publicError } from './log';
@@ -9,11 +10,13 @@ let starting: Promise<void> | undefined;
 let closing: Promise<void> | undefined;
 let editing: Editing | undefined;
 let editingEnabled = false;
+let autonomousEnabled = false;
+let autonomousController: Autonomous | undefined;
 let authorizedRoot: string | undefined;
 let output: vscode.OutputChannel;
 let logs: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext): { editing: Editing } {
+export function activate(context: vscode.ExtensionContext): { editing: Editing; autonomous: Autonomous } {
   output = vscode.window.createOutputChannel('ForgePilot');
   logs = vscode.window.createOutputChannel('ForgePilot Logs');
   context.subscriptions.push(output, logs);
@@ -29,11 +32,11 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing }
       try { await fn(...args); } catch (error) { report(error); }
     }));
   };
-  const start = async (enableEditing = false) => {
+  const start = async (enableEditing = false, enableAutonomous = false) => {
     if (!vscode.workspace.isTrusted) throw new ForgePilotError('Trust this workspace before starting ForgePilot.');
     if (closing) throw new ForgePilotError('ForgePilot is stopping. Wait for cleanup to finish.');
     if (starting) return starting;
-    if (bridge && enableEditing && !editingEnabled) { const previous = bridge; bridge = undefined; await previous.stop(); }
+    if (bridge && (enableEditing && !editingEnabled || enableAutonomous && !autonomousEnabled)) { const previous = bridge; bridge = undefined; await previous.stop(); }
     if (bridge) { output.show(true); return; }
     starting = (async () => {
       const folders = vscode.workspace.workspaceFolders?.filter(f => f.uri.scheme === 'file');
@@ -44,12 +47,12 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing }
       const candidate = new Bridge({
         baseUrl: config.get<string>('baseUrl', 'http://localhost:8790'), agentName: config.get<string>('agentName', 'forge-coder'),
         turnTimeoutSeconds: config.get<number>('turnTimeoutSeconds', 180), root: folder.uri.fsPath,
-        childPath: context.asAbsolutePath('dist/mcp-child.cjs'), proposals: enableEditing, token: await context.secrets.get('trueforge.token'), log,
+        childPath: context.asAbsolutePath('dist/mcp-child.cjs'), proposals: enableEditing, autonomous: enableAutonomous, contextBudget: config.get<number>('contextBudget', 12000), toolIntervalMs: enableAutonomous ? config.get<number>('autonomousToolIntervalMs', 0) : 0, token: await context.secrets.get('trueforge.token'), log,
       });
       output.show(true);
-      output.appendLine(`[starting ${enableEditing ? 'proposal' : 'read-only'} session for ${folder.name}]`);
+      output.appendLine(`[starting ${enableAutonomous ? 'autonomous' : enableEditing ? 'proposal' : 'read-only'} session for ${folder.name}]`);
       const id = await candidate.start();
-      bridge = candidate; editingEnabled = enableEditing; authorizedRoot = folder.uri.fsPath;
+      bridge = candidate; editingEnabled = enableEditing; autonomousEnabled = enableAutonomous; authorizedRoot = folder.uri.fsPath;
       output.appendLine(`[session ${id}; model ${candidate.modelName}; workspace ${folder.uri.fsPath}]`);
     })();
     try { await starting; } finally { starting = undefined; }
@@ -70,7 +73,7 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing }
       finally { subscription.dispose(); }
     });
   });
-  command('forgepilot.cancel', async () => { editing?.cancel(); await bridge?.cancel(); });
+  command('forgepilot.cancel', async () => { editing?.cancel(); autonomousController?.cancel(); await bridge?.cancel(); });
   command('forgepilot.stop', async () => {
     await stop();
     output.appendLine('[session stopped; local MCP access closed]');
@@ -98,13 +101,37 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing }
   command('forgepilot.rejectAll', async () => { edits.review('rejected'); });
   command('forgepilot.apply', async () => { await edits.apply(); });
   command('forgepilot.undo', async () => { await edits.undo(); });
+  const autonomous = new Autonomous(async () => {
+    await start(false, true);
+    if (!bridge || !authorizedRoot || !autonomousEnabled) throw new ForgePilotError('Autonomous session could not start.');
+    return { bridge, root: authorizedRoot };
+  }, output);
+  autonomousController = autonomous;
+  context.subscriptions.push(autonomous, vscode.workspace.registerTextDocumentContentProvider('forgepilot-agent', autonomous),
+    vscode.window.createTreeView('forgepilot.batchView', { treeDataProvider: autonomous }));
+  command('forgepilot.autonomous', async instruction => { await autonomous.run(typeof instruction === 'string' ? instruction : undefined); });
+  command('forgepilot.batchDiff', async node => { await autonomous.showDiff(node as ReviewNode); });
+  command('forgepilot.batchReview', async () => { await autonomous.picker(); });
+  command('forgepilot.batchAccept', async node => { if (!node || typeof node !== 'object' || !('fileId' in node)) throw new ForgePilotError('Select a batch file or hunk.'); autonomous.review('accepted', node as ReviewNode); });
+  command('forgepilot.batchReject', async node => { if (!node || typeof node !== 'object' || !('fileId' in node)) throw new ForgePilotError('Select a batch file or hunk.'); autonomous.review('rejected', node as ReviewNode); });
+  command('forgepilot.batchAcceptRemaining', async () => { autonomous.review('accepted', undefined, true); });
+  command('forgepilot.batchRejectRemaining', async () => { autonomous.review('rejected', undefined, true); });
+  command('forgepilot.batchApply', async () => { await autonomous.apply(); });
+  command('forgepilot.batchUndo', async () => { await autonomous.undo(); });
+  command('forgepilot.contextInspector', async () => { await autonomous.inspect(); });
+  command('forgepilot.verificationTerminal', async () => {
+    if (!vscode.workspace.isTrusted) throw new ForgePilotError('Trust the workspace first.');
+    const root = authorizedRoot ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    if (!root) throw new ForgePilotError('Open a local workspace first.');
+    vscode.window.createTerminal({ name: 'ForgePilot Verification', cwd: root }).show();
+  });
   context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => { void stop().catch(report); }));
   log('extension.activated');
-  return { editing: edits };
+  return { editing: edits, autonomous };
 }
 
 async function stop(): Promise<void> {
-  editing?.cancel();
+  editing?.cancel(); autonomousController?.cancel();
   if (closing) return closing;
   closing = (async () => {
     try { await starting; } catch { /* Startup performs its own rollback. */ }

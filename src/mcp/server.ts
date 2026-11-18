@@ -1,13 +1,15 @@
 import { createServer, type Server } from 'node:http';
+import { setTimeout as delay } from 'node:timers/promises';
 import { timingSafeEqual } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { autonomousTools } from './autonomous';
 import { patchSchema, renderPatch } from '../patch';
 import { LIMITS, Workspace } from '../workspace';
 import { ForgePilotError, publicError, type Logger } from '../log';
 
-function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpServer {
+function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>): McpServer {
   const mcp = new McpServer({ name: 'forgepilot-workspace', version: '0.1.0' });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   const run = async (tool: string, fn: () => Promise<unknown>) => {
@@ -15,9 +17,11 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpS
     try {
       const text = JSON.stringify(await fn());
       if (Buffer.byteLength(text) > LIMITS.outputBytes) throw new ForgePilotError('Tool output exceeds the 96 KiB response budget. Use a narrower path or search.');
+      await pace();
       log('tool.completed', { tool, durationMs: Date.now() - start, bytes: Buffer.byteLength(text) });
       return { content: [{ type: 'text' as const, text }] };
     } catch (error) {
+      await pace();
       log('tool.failed', { tool, durationMs: Date.now() - start });
       return { isError: true, content: [{ type: 'text' as const, text: publicError(error) }] };
     }
@@ -29,7 +33,7 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpS
   mcp.registerTool('read_file', {
     description: 'Read one permitted workspace-relative UTF-8 text file, maximum 64 KiB. Read-only; no absolute paths, hidden files, secrets or symlinks.',
     inputSchema: { path: z.string().min(1).max(1024) }, annotations,
-  }, ({ path }) => run('read_file', () => workspace.readFile(path)));
+  }, ({ path }) => run('read_file', async () => { const file = await workspace.readFile(path); return { path: file.path, content: file.content, bytes: file.bytes }; }));
   mcp.registerTool('search_workspace', {
     description: 'Case-sensitive literal text search in permitted workspace files. Returns at most 100 matches with 1-based line numbers. Check truncated and skippedFiles.',
     inputSchema: { query: z.string().min(1).max(200), path: z.string().max(1024).default('.') }, annotations,
@@ -43,14 +47,23 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpS
     renderPatch(file.content, args);
     return { kind: 'forgepilot.patch', patch: args };
   }));
+  if (autonomous) autonomousTools(mcp, workspace, run, contextBudget);
   return mcp;
 }
 
 export interface RunningServer { url: string; close(): Promise<void> }
 
-export async function startServer(root: string, token: string, log: Logger, proposals = false): Promise<RunningServer> {
+export async function startServer(root: string, token: string, log: Logger, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0): Promise<RunningServer> {
   if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Expected a 256-bit random MCP token');
+  if (!Number.isSafeInteger(toolIntervalMs) || toolIntervalMs < 0 || toolIntervalMs > 10000) throw new ForgePilotError('Invalid tool response interval.');
   const workspace = await Workspace.create(root);
+  const pacing = new AbortController();
+  let ready = Promise.resolve();
+  const pace = () => {
+    if (!autonomous || !toolIntervalMs) return Promise.resolve();
+    const next = ready.catch(() => {}).then(() => delay(toolIntervalMs, undefined, { signal: pacing.signal }));
+    ready = next; return next;
+  };
   let active = 0;
   const transports = new Set<StreamableHTTPServerTransport>();
   const http: Server = createServer((req, res) => {
@@ -66,7 +79,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
       if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
       if (active >= 8) { res.writeHead(429).end(); return; }
       active++;
-      const mcp = toolServer(workspace, log, proposals);
+      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       transports.add(transport);
       res.once('close', () => { void transport.close(); });
@@ -76,7 +89,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
         for await (const chunk of req) {
           const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
           size += buffer.length;
-          if (size > (proposals ? 256 * 1024 : 16 * 1024)) { res.writeHead(413).end(); return; }
+          if (size > (autonomous ? 1024 * 1024 : proposals ? 256 * 1024 : 16 * 1024)) { res.writeHead(413).end(); return; }
           chunks.push(buffer);
         }
         let body: unknown;
@@ -96,9 +109,9 @@ export async function startServer(root: string, token: string, log: Logger, prop
       res.end();
     });
   });
-  http.requestTimeout = 5000;
+  http.requestTimeout = autonomous ? 15000 : 5000;
   http.headersTimeout = 5000;
-  http.timeout = 5000;
+  http.timeout = autonomous ? Math.max(15000, toolIntervalMs * 10 + 10000) : 5000;
   http.maxConnections = 16;
   await new Promise<void>((resolve, reject) => {
     http.once('error', reject);
@@ -110,6 +123,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
   return {
     url: `http://127.0.0.1:${address.port}/mcp`,
     async close() {
+      pacing.abort(); workspace.dispose();
       await Promise.allSettled([...transports].map(t => t.close()));
       await new Promise<void>(resolve => { http.close(() => resolve()); http.closeAllConnections(); });
       log('mcp.closed');

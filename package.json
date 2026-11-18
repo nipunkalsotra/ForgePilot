@@ -1,7 +1,7 @@
 {
   "name": "forgepilot",
   "displayName": "ForgePilot",
-  "description": "Safe inline editing and hunk review through TrueForge for VS Code.",
+  "description": "TrueForge coding agent with secure inline and autonomous multi-file review, context retrieval and undo.",
   "version": "0.1.0",
   "type": "module",
   "publisher": "nipunkalsotra",
@@ -86,6 +86,52 @@
       {
         "command": "forgepilot.undo",
         "title": "ForgePilot: Undo Last Accepted Edit"
+      },
+      {
+        "command": "forgepilot.autonomous",
+        "title": "ForgePilot: Autonomous Agent"
+      },
+      {
+        "command": "forgepilot.batchDiff",
+        "title": "ForgePilot: Show Batch File Diff"
+      },
+      {
+        "command": "forgepilot.batchReview",
+        "title": "ForgePilot: Review Batch Hunks"
+      },
+      {
+        "command": "forgepilot.batchAccept",
+        "title": "ForgePilot: Accept Batch File or Hunk",
+        "icon": "$(check)"
+      },
+      {
+        "command": "forgepilot.batchReject",
+        "title": "ForgePilot: Reject Batch File or Hunk",
+        "icon": "$(close)"
+      },
+      {
+        "command": "forgepilot.batchAcceptRemaining",
+        "title": "ForgePilot: Accept Remaining Batch Hunks"
+      },
+      {
+        "command": "forgepilot.batchRejectRemaining",
+        "title": "ForgePilot: Reject Remaining Batch Hunks"
+      },
+      {
+        "command": "forgepilot.batchApply",
+        "title": "ForgePilot: Apply Accepted Batch Hunks"
+      },
+      {
+        "command": "forgepilot.batchUndo",
+        "title": "ForgePilot: Undo Last Accepted Batch"
+      },
+      {
+        "command": "forgepilot.contextInspector",
+        "title": "ForgePilot: Inspect Repository Context"
+      },
+      {
+        "command": "forgepilot.verificationTerminal",
+        "title": "ForgePilot: Open Verification Terminal"
       }
     ],
     "configuration": {
@@ -110,6 +156,22 @@
           "maximum": 600,
           "scope": "machine",
           "description": "Overall turn deadline, including streaming."
+        },
+        "forgepilot.contextBudget": {
+          "type": "number",
+          "default": 12000,
+          "minimum": 2000,
+          "maximum": 32000,
+          "scope": "machine",
+          "description": "Estimated context token budget (UTF-8 bytes/3), including retrieval metadata and an instruction/output reserve."
+        },
+        "forgepilot.autonomousToolIntervalMs": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 10000,
+          "scope": "machine",
+          "description": "Optional minimum interval between autonomous MCP tool responses, to reduce model request bursts on limited provider plans. Does not change provider settings or retry model calls."
         }
       }
     },
@@ -118,6 +180,10 @@
         {
           "id": "forgepilot.reviewView",
           "name": "ForgePilot Patch Review"
+        },
+        {
+          "id": "forgepilot.batchView",
+          "name": "ForgePilot Agent Changes"
         }
       ]
     },
@@ -132,6 +198,11 @@
         "command": "forgepilot.review",
         "key": "ctrl+alt+r",
         "mac": "cmd+alt+r"
+      },
+      {
+        "command": "forgepilot.autonomous",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
       }
     ],
     "menus": {
@@ -144,6 +215,16 @@
         {
           "command": "forgepilot.rejectHunk",
           "when": "view == forgepilot.reviewView && viewItem == forgepilotHunk",
+          "group": "inline"
+        },
+        {
+          "command": "forgepilot.batchAccept",
+          "when": "view == forgepilot.batchView && (viewItem == forgepilotBatchHunk || viewItem == forgepilotBatchFile)",
+          "group": "inline"
+        },
+        {
+          "command": "forgepilot.batchReject",
+          "when": "view == forgepilot.batchView && (viewItem == forgepilotBatchHunk || viewItem == forgepilotBatchFile)",
           "group": "inline"
         }
       ],
@@ -177,6 +258,41 @@
           "command": "forgepilot.undo",
           "when": "view == forgepilot.reviewView",
           "group": "navigation"
+        },
+        {
+          "command": "forgepilot.batchReview",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.batchAcceptRemaining",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.batchRejectRemaining",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.batchApply",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.batchUndo",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.contextInspector",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.cancel",
+          "when": "view == forgepilot.batchView",
+          "group": "navigation"
         }
       ]
     }
@@ -188,8 +304,8 @@
     "setup:agent": "node --import tsx scripts/setup-agent.ts",
     "pretest": "npm run build",
     "test": "node --import tsx --test --test-timeout=15000 tests/*.test.ts",
-    "test:unit": "node --import tsx --test --test-timeout=15000 tests/workspace.test.ts tests/events.test.ts tests/config.test.ts",
-    "test:integration": "npm run build && node --import tsx --test --test-timeout=15000 tests/mcp.test.ts tests/bridge.test.ts",
+    "test:unit": "node --import tsx --test --test-timeout=15000 tests/workspace.test.ts tests/events.test.ts tests/config.test.ts tests/patch.test.ts tests/completion.test.ts tests/context.test.ts tests/batch.test.ts",
+    "test:integration": "npm run build && node --import tsx --test --test-timeout=15000 tests/mcp.test.ts tests/bridge.test.ts tests/approval.test.ts",
     "test:live": "npm run build && node --import tsx scripts/verify-live.ts",
     "test:extension": "npm run build && node --import tsx scripts/verify-extension.ts",
     "check": "npm run build && npm run lint && npm test",

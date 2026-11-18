@@ -10,7 +10,7 @@ export class Companion {
 
   constructor(private readonly childPath: string, private readonly log: Logger) {}
 
-  async start(root: string, proposals = false): Promise<string> {
+  async start(root: string, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0): Promise<string> {
     if (this.child) throw new ForgePilotError('Companion is already running.');
     // No provider keys or other inherited secrets are passed to the child.
     const child = fork(this.childPath, [], { execArgv: [], env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT },
@@ -45,7 +45,7 @@ export class Companion {
             && /^http:\/\/127\.0\.0\.1:\d+\/mcp$/.test(message.url)) { cleanup(); resolve(message.url); }
         };
         child.once('exit', failed); child.once('error', failed); child.on('message', ready);
-        child.send({ root, token: this.token, proposals }, error => { if (error) failed(); });
+        child.send({ root, token: this.token, proposals, autonomous, contextBudget, toolIntervalMs }, error => { if (error) failed(); });
       });
       this.url = url;
       this.log('companion.started', { pid: child.pid });

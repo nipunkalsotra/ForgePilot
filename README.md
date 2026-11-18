@@ -1,8 +1,24 @@
-# ForgePilot — Phase 2
+# ForgePilot — Phase 3
+
+**Verification status:** Phase 2.1 is committed and passes its gate. Phase 3 implementation passes local/editor tests, but official live Flask Task B has not passed; see [the verification report](docs/phase-3-verification.md). Phase 3 is not declared complete.
 
 A VS Code inline-editing agent powered by an existing **TrueForge saved agent**. The extension creates named sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
 
-Phase 1 read-only sessions retain `list_files`, `read_file`, and `search_workspace`. Phase 2 adds an opt-in `propose_patch` MCP tool, genuine TrueForge staging approval, native VS Code hunk review, approved buffer edits, cancellation and guarded undo. Terminal execution and autonomous multi-file modification remain outside this phase.
+Phase 1 read-only sessions retain `list_files`, `read_file`, and `search_workspace`. Phase 2 adds an opt-in `propose_patch` MCP tool, genuine TrueForge staging approval, native VS Code hunk review, approved buffer edits, cancellation and guarded undo. Phase 3 adds autonomous discovery and approved multi-file batches. Agent-accessible terminal execution remains outside this phase.
+
+## Autonomous multi-file editing
+
+Run **ForgePilot: Autonomous Agent** (Ctrl+Alt+A / Cmd+Alt+A) and describe the feature without naming files. TrueForge drives repository discovery, context retrieval, planning and one final proposal batch. The read-only `check_batch` tool lets the agent validate and correct its own draft before requesting approval. Observe streamed responses and actual tool activity in ForgePilot Output. **ForgePilot: Inspect Repository Context** opens a native read-only inspector with real candidate ranks, selected snippets, reasons, budget estimates and tool-call IDs.
+
+Optional references use `@file:src/example.py`, `@symbol:SomeClass`, `@file(src/example.py)` or `@symbol(SomeClass)`. `@src/example.py` and `@SomeClass` are shorthand. References follow the same path/encoding/link policy as automatic retrieval.
+
+Choose **Allow Batch Staging** for TrueForge's proposal tool request. This only stages validated proposals. Explorer → **ForgePilot Agent Changes** groups changes by file; select a file/hunk for its native diff. Check/cross actions accept/reject a file or individual hunk. Toolbar commands accept/reject remaining hunks without overriding earlier decisions. **Review Batch Hunks** supports keyboard Quick Picks. Review every hunk, then **Apply Accepted Batch Hunks**. Save normally. **Undo Last Accepted Batch** restores preceding contents and removes reviewed new files, while refusing unsafe restoration after unrelated changes.
+
+**Cancel Turn** invalidates both pending inline and autonomous proposals and cancels an active SDK turn. **Open Verification Terminal** opens a normal VS Code terminal in the workspace; the agent has no shell capability. Run project tests there after saving approved edits. File creates are explicitly reviewed, never overwrite an existing target, and require an existing parent directory.
+
+For request/token-limited plans, set `forgepilot.autonomousToolIntervalMs` to space MCP responses; the verification driver uses 10,000 ms. This is cancellable response pacing, not a model retry loop or a guarantee against shared-provider quotas. The default retrieval budget is **12,000 estimated tokens**, configurable with `forgepilot.contextBudget`. Counts are `ceil(UTF-8 bytes / 3)`, include serialized retrieval metadata, and reserve instruction/output space. Transport-sized packages stay below 20,000 characters for the installed TrueForge tool-response limit. This is a per-retrieval budget, not a claim of exact provider tokenization or a global conversation limit. Source is ranked using lexical hits, declaration locations, filename evidence, imports and implementation/test/documentation counterparts. Truncation and omissions are visible. TrueForge's deferred loading keeps inventory, symbol and legacy schemas out of initial context; context, range reads, search and proposal schemas are eager. There is no extension-owned model loop.
+
+Run one live verification at a time against a saved agent. Provider quotas can fail a run; failed completion invalidates the entire pending batch. Failed editor operations attempt guarded restoration of recognized applied portions and report any unsafe/partial state. `WorkspaceEdit` is not a filesystem transaction or a public version CAS. Do not edit the same files concurrently during application. See [architecture](docs/architecture.md), [Phase 2.1 hardening](docs/phase-2-hardening.md) and [Phase 3 verification](docs/phase-3-verification.md).
 
 ## Inline editing
 
@@ -75,13 +91,15 @@ The SDK decodes wire fields into camelCase. `model.message.delta` carries stream
 
 There is no custom agent loop. TrueForge chooses tool calls, invokes MCP, calls the model, and persists sessions. The companion uses MCP **stateless Streamable HTTP**, which the installed TrueForge transport client supports. Its JSON tool responses are separate from TrueForge's genuine SSE model streaming.
 
-The companion is a single child process with no descendants. It receives a random 256-bit token and root over IPC, inherits no provider keys, and binds a random port only on `127.0.0.1`. Requests need the token, the exact Host header, and no Origin header. No CORS is enabled. TrueForge stores the temporary header credential in its connector settings; it is never written into this repository or logged. Explicit stop sends SIGTERM, waits for exit, and escalates to SIGKILL if needed. Losing parent IPC also closes the companion. The extension uses Electron's Node mode when it forks inside VS Code.
+The companion owns bounded Git metadata subprocesses only in autonomous inventory; these are tracked and killed during companion cleanup. Read-only and inline tools spawn no descendants. It receives a random 256-bit token and root over IPC, inherits no provider keys, and binds a random port only on `127.0.0.1`. Requests need the token, the exact Host header, and no Origin header. No CORS is enabled. TrueForge stores the temporary header credential in its connector settings; it is never written into this repository or logged. Explicit stop sends SIGTERM, waits for exit, and escalates to SIGKILL if needed. Losing parent IPC also closes the companion. The extension uses Electron's Node mode when it forks inside VS Code.
 
 On stop, ForgePilot cancels any active backend turn, removes only its own agent attachment, deletes its connector, and stops the child. Sessions and tool history remain in TrueForge. Failed backend cancellation immediately closes the companion to revoke workspace access. Registry cleanup failure is reported with the exact connector name. Hard termination can leave a stale registry entry, though the process closes on IPC loss: remove that `forgepilot-…` entry from the agent first, then from **Settings → Connectors**, before starting again.
 
-The saved-agent API replaces the manifest and has no conditional update mechanism. ForgePilot re-reads before attachment and cleanup to preserve unrelated fields, but **one active ForgePilot instance per saved agent** is supported. Other attached connectors are rejected; concurrent edits to that agent must be avoided. Read-only turns still reject interactive requests. Inline turns handle only exact `propose_patch` approval requests through the genuine SDK `sessions.createTurnEvents` API; other interactive requests cancel safely. The agent has no apply, approve, shell or write tool.
+The saved-agent API replaces the manifest and has no conditional update mechanism. ForgePilot re-reads before attachment and cleanup to preserve unrelated fields, but **one active ForgePilot instance per saved agent** is supported. Other attached connectors are rejected; concurrent edits to that agent must be avoided. Read-only turns still reject interactive requests. Inline turns handle only exact `propose_patch` approval requests; autonomous turns correlate `propose_batch` and supported native question responses through the genuine SDK `sessions.createTurnEvents` API; other interactive requests cancel safely. The agent has no apply, approve, shell or write tool.
 
 ## Workspace policy and budgets
+
+The following table preserves the original read-only limits. Autonomous tools add a 10,000-file inventory (Git tracked/untracked excluding ignored paths, or bounded fallback: 30,000 entries, depth 20), 5-second inventory/search checks, an 8 MiB lexical scan ceiling, reads of at most 200 lines from UTF-8 files up to 1 MiB, and at most 12 proposals of 64 KiB each. A batch input is limited to 90,000 serialized bytes. Autonomous HTTP bodies are capped at 1 MiB; the original read-only/proposal limits remain in effect for their modes. Limits are cooperative checks between I/O operations, not hard real-time filesystem deadlines.
 
 All tool paths are relative to the canonical authorized root. Absolute paths, `..`, ambiguous separators, NULs, drive/stream syntax, hidden paths (including `.env`, `.git`, `.ssh`, `.aws`, and `.npmrc`), common credential/key names and extensions, and generated/dependency directories are rejected. Directory and file symlinks are never followed, including links pointing inside the root. Hardlinked files, non-regular files, binary/NUL-containing files, and invalid UTF-8 are rejected. Reads use read-only descriptors, no-follow/nonblocking flags where available, identity checks before/after opening, and Linux `/proc/self/fd` containment checks on the opened descriptor. Directory enumeration revalidates each path; no workspace filesystem write APIs are exposed.
 
@@ -107,7 +125,9 @@ Settings are machine scoped to keep a repository from redirecting TrueForge conn
 | --- | --- |
 | `forgepilot.baseUrl` | `http://localhost:8790` (loopback HTTP only) |
 | `forgepilot.agentName` | `forge-coder` |
-| `forgepilot.turnTimeoutSeconds` | `180` |
+| `forgepilot.turnTimeoutSeconds` | `180` (up to 600; useful for multi-file tasks) |
+| `forgepilot.contextBudget` | `12000` estimated tokens (2,000–32,000) |
+| `forgepilot.autonomousToolIntervalMs` | `0` (optional 0–10,000 ms response pacing for limited provider plans) |
 
 For optional TrueForge OIDC authentication, run **ForgePilot: Set TrueForge Authentication Token**. It stores the token in VS Code `SecretStorage`; an empty value removes it. Model API keys belong in TrueForge, not this command. CLI scripts accept optional `TRUEFORGE_TOKEN`, `TRUEFORGE_BASE_URL`, and `TRUEFORGE_AGENT_NAME` (the last is used by live verification). Restart the ForgePilot session after changing settings or tokens. See [config/trueforge.env.example](config/trueforge.env.example).
 
@@ -133,7 +153,7 @@ VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 FORGEPILOT_EXTENSION_LIVE=1 VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 ```
 
-Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. The default host test activates the real extension and checks command registration; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives the production start/ask/stop commands against the real local saved agent and checks persisted MCP file contents. It currently targets the default local URL and `forge-coder` agent.
+Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. The default host test activates the real extension and tests actual inline and multi-file editor diff/application/undo APIs using labelled proposal fixtures; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives the production start/ask/stop commands against the real local saved agent and checks persisted MCP file contents. It currently targets the default local URL and `forge-coder` agent.
 
 Live verification uses disposable temporary fixtures, including an unpredictable file marker. It requires both actual companion tool logs and correlated persisted MCP history; there is no mock model fallback. It compares SHA-256 file snapshots before/after and leaves the TrueForge session for inspection. Results are written to ignored `artifacts/live-verification.json`. The GUI test uses a disposable profile and workspace. These checks can incur your configured provider's normal charges.
 

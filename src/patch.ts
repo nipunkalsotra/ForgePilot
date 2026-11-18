@@ -5,7 +5,7 @@ import { ForgePilotError } from './log';
 
 export const patchSchema = z.strictObject({
   path: z.string().min(1).max(1024), baseHash: z.string().regex(/^[a-f0-9]{64}$/),
-  edits: z.array(z.strictObject({ oldText: z.string().min(1).max(LIMITS.fileBytes), newText: z.string().max(LIMITS.fileBytes) })).min(1).max(64),
+  edits: z.array(z.strictObject({ oldText: z.string().min(1).max(LIMITS.fileBytes).describe('Exact non-empty original text, unique in the target. For an insertion, use an existing unique anchor and include it unchanged in newText; never use an empty oldText.'), newText: z.string().max(LIMITS.fileBytes) })).min(1).max(64),
 });
 export type Patch = z.infer<typeof patchSchema>;
 export const hash = (text: string): string => createHash('sha256').update(text).digest('hex');
@@ -72,7 +72,7 @@ export interface Proposal {
 export class PatchStore {
   private cancelled = false;
   private proposal?: Proposal;
-  constructor(readonly workspace: Workspace, readonly snapshot: Snapshot) { captureSelection(snapshot); }
+  constructor(readonly workspace: Workspace, readonly snapshot: Snapshot) { this.snapshot = captureSelection(snapshot); }
   get current(): Proposal | undefined { return this.proposal ? structuredClone(this.proposal) : undefined; }
   cancel(): void { this.cancelled = true; if (this.proposal?.status === 'staged') this.proposal.status = 'cancelled'; }
   async stage(value: unknown, toolApproved: boolean): Promise<Proposal> {

@@ -1,0 +1,133 @@
+import { Workspace } from './workspace';
+import { ForgePilotError } from './log';
+
+export const estimatedTokens = (text: string): number => Math.ceil(Buffer.byteLength(text, 'utf8') / 3);
+const stop = new Set('a an the add new built in to of and or is as be by for that it with from should must this all well include update implement'.split(' '));
+export interface Candidate { path: string; score: number; reasons: string[]; line: number; symbols: string[] }
+export interface ContextPackage {
+  kind: 'forgepilot.context'; query: string; source: string; discovered: number; scannedBytes: number;
+  candidates: Candidate[]; selected: (Candidate & { content: string; start: number; end: number; baseHash: string; truncated: boolean })[];
+  omitted: number; truncated: boolean; budget: number; reserved: number; estimatedTokens: number; methodology: string;
+}
+const declarations = /(?:^|\s)(?:export\s+)?(?:async\s+)?(?:def|class|function|interface|type|const|let|var)\s+([A-Za-z_$][\w$]*)/;
+export class ContextEngine {
+  constructor(readonly workspace: Workspace, readonly budget = 12000) {
+    if (!Number.isSafeInteger(budget) || budget < 2000 || budget > 32000) throw new ForgePilotError('Context budget must be 2,000–32,000 estimated tokens.');
+  }
+  async discover(query = '', scope = '.', cursor = 0, limit = 100) {
+    if (query.length > 200 || !Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 200) throw new ForgePilotError('Invalid discovery query or page.');
+    const listing = await this.workspace.inventory(scope);
+    const names = listing.files.filter(p => p.toLowerCase().includes(query.toLowerCase()));
+    return { ...listing, files: names.slice(cursor, cursor + limit), matched: names.length, nextCursor: cursor + limit < names.length ? cursor + limit : null,
+      truncated: listing.truncated || cursor + limit < names.length };
+  }
+  async search(query: string, scope = '.', symbol = false) {
+    if (!query.trim() || query.length > 200 || /[\r\n\0]/.test(query)) throw new ForgePilotError('Search requires a bounded single-line literal.');
+    const listing = await this.workspace.inventory(scope), deadline = Date.now() + 5000;
+    const matches: { path: string; line: number; text: string; symbol?: string }[] = [];
+    let scannedBytes = 0, skipped = 0, truncated = listing.truncated;
+    for (const file of listing.files) {
+      if (Date.now() > deadline || scannedBytes >= 8 * 1024 * 1024 || matches.length >= 100) { truncated = true; break; }
+      try {
+        const read = await this.workspace.readFile(file, 1024 * 1024);
+        if (scannedBytes + read.bytes > 8 * 1024 * 1024) { truncated = true; break; }
+        scannedBytes += read.bytes;
+        for (const [i, line] of read.content.split('\n').entries()) {
+          const name = declarations.exec(line)?.[1];
+          if (symbol ? name === query : line.toLowerCase().includes(query.toLowerCase())) matches.push({ path: file, line: i + 1, text: line.slice(0, 400), symbol: name });
+          if (matches.length >= 100) break;
+        }
+      } catch { skipped++; }
+    }
+    return { matches, scannedBytes, skipped, truncated };
+  }
+  async retrieve(query: string, scope = '.'): Promise<ContextPackage> {
+    if (!query.trim() || query.length > 16000) throw new ForgePilotError('Enter a context query of 1–16,000 characters.');
+    const fileRefs = [...query.matchAll(/@file(?:\(([^)]+)\)|:([^\s]+))/g)].map(m => (m[1] ?? m[2])!);
+    const symbolRefs = [...query.matchAll(/@symbol(?:\(([^)]+)\)|:([\w$]+))/g)].map(m => (m[1] ?? m[2])!);
+    // Also support @path/to/file and @Identifier shorthand; explicit syntax disambiguates.
+    for (const match of query.matchAll(/(?:^|\s)@([\w./-]+)(?=\s|$)/g)) {
+      if (match[1]!.includes('/') || match[1]!.includes('.')) fileRefs.push(match[1]!); else symbolRefs.push(match[1]!);
+    }
+    if (fileRefs.length + symbolRefs.length > 16) throw new ForgePilotError('Use at most 16 explicit references.');
+    for (const file of fileRefs) await this.workspace.readFile(file, 1024 * 1024);
+    const words = [...new Set((query.toLowerCase().match(/[a-z_][a-z0-9_]{1,}/g) ?? []).filter(w => !stop.has(w)))].slice(0, 40);
+    const listing = await this.workspace.inventory(scope);
+    const paths = [...new Set([...fileRefs, ...listing.files])];
+    const ranked: Candidate[] = [];
+    const deadline = Date.now() + 8000;
+    let scannedBytes = 0, truncated = listing.truncated;
+    // Filename scores prioritize the scanning order; bounded full-text scanning still covers late files.
+    paths.sort((a, b) => words.filter(w => b.toLowerCase().includes(w)).length - words.filter(w => a.toLowerCase().includes(w)).length || a.localeCompare(b));
+    const texts = new Map<string, string>();
+    for (const file of paths) {
+      if (Date.now() > deadline || scannedBytes >= 8 * 1024 * 1024) { truncated = true; break; }
+      try {
+        const read = await this.workspace.readFile(file, 1024 * 1024);
+        if (scannedBytes + read.bytes > 8 * 1024 * 1024) { truncated = true; break; }
+        scannedBytes += read.bytes;
+        const lines = read.content.split('\n'), reasons: string[] = [], symbols: string[] = [];
+        let score = 0, bestLine = 1, bestHits = 0;
+        if (fileRefs.includes(file)) { score += 1000; reasons.push('explicit file reference'); }
+        for (const word of words) if (file.toLowerCase().includes(word)) { score += 12; reasons.push(`path matches ${word}`); }
+        for (const [i, line] of lines.entries()) {
+          const name = declarations.exec(line)?.[1];
+          if (name) { if (symbols.length < 8) symbols.push(name); if (symbolRefs.includes(name)) { score += 1000; bestLine = i + 1; reasons.push(`explicit symbol ${name}`); } }
+          const hits = words.filter(w => line.toLowerCase().includes(w)).length;
+          if (hits > bestHits && !reasons.some(r => r.startsWith('explicit symbol'))) { bestHits = hits; bestLine = i + 1; }
+          score += Math.min(hits, 3) * 0.15;
+        }
+        if (bestHits) { score += bestHits * 8; reasons.push(`lexical evidence (${bestHits} terms near line ${bestLine})`); }
+        if (score > 0) { ranked.push({ path: file, score: Math.round(score * 10) / 10, reasons, line: bestLine, symbols }); texts.set(file, read.content); }
+      } catch { /* Forbidden/binary files cannot supply snippets. */ }
+    }
+    for (const ref of symbolRefs) if (!ranked.some(c => c.reasons.includes(`explicit symbol ${ref}`))) throw new ForgePilotError(`Symbol reference '${ref}' was not resolved within the search budget.`);
+    // Lexical import evidence: candidate imports of another candidate's module strengthen that relationship.
+    for (const candidate of ranked.slice(0, 100)) {
+      const module = candidate.path.split('/').at(-1)!.replace(/\.[^.]+$/, '');
+      if (module.length < 3) continue;
+      const related = ranked.slice(0, 100).find(other => other !== candidate && texts.get(other.path)!.split('\n').some(line => /\b(import|from|require)\b/.test(line) && line.includes(module)));
+      if (related) { candidate.score += 5; candidate.reasons.push(`import/reference in ${related.path}`); }
+    }
+    ranked.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
+    const result: ContextPackage = { kind: 'forgepilot.context', query, source: listing.source, discovered: listing.files.length, scannedBytes,
+      candidates: ranked.slice(0, 20), selected: [], omitted: ranked.length, truncated, budget: this.budget,
+      reserved: Math.min(this.budget - 500, Math.max(1000, estimatedTokens(query) + 1000)), estimatedTokens: 0,
+      methodology: 'estimate: ceil(UTF-8 bytes / 3); JSON metadata included; reserve for instructions/output, SDK tool schemas excluded' };
+    while (estimatedTokens(JSON.stringify(result.candidates)) > (this.budget - result.reserved) / 3 && result.candidates.length) { result.candidates.pop(); result.truncated = true; }
+    // Avoid a repository full of same-role files crowding out implementation/tests/docs evidence.
+    const role = (p: string) => /(^|\/)(tests?|specs?)(\/|[._-])|[._-](test|spec)\./i.test(p) ? 'tests' : /(^|\/)(docs?|documentation)(\/|$)|\.(rst|md)$/i.test(p) ? 'documentation' : 'implementation';
+    const implementation = ranked.find(c => role(c.path) === 'implementation');
+    if (implementation) {
+      const stem = implementation.path.split('/').at(-1)!.replace(/\.[^.]+$/, '');
+      for (const candidate of ranked) if (candidate !== implementation && candidate.path.split('/').at(-1)!.includes(stem)) { candidate.score += 15; candidate.reasons.push(`parallel path/name to ${implementation.path}`); }
+      ranked.sort((a, b) => b.score - a.score || a.path.localeCompare(b.path));
+      result.candidates = ranked.slice(0, result.candidates.length);
+    }
+    const selectedOrder: Candidate[] = [];
+    for (const kind of ['implementation', 'tests', 'documentation']) { const found = ranked.find(c => role(c.path) === kind); if (found) selectedOrder.push(found); }
+    for (const c of ranked) if (!selectedOrder.includes(c)) selectedOrder.push(c);
+    for (const candidate of selectedOrder.slice(0, 12)) {
+      const start = Math.max(1, candidate.line - 15);
+      for (let count = 80; count >= 5; count = Math.floor(count / 2)) {
+        let range: Awaited<ReturnType<Workspace['readRange']>>;
+        try { range = await this.workspace.readRange(candidate.path, start, count); }
+        catch { result.truncated = true; continue; }
+        const item = { ...candidate, content: range.content, start, end: range.end, baseHash: range.hash, truncated: range.truncated };
+        result.selected.push(item);
+        if (estimatedTokens(JSON.stringify(result)) <= this.budget - result.reserved && JSON.stringify(result).length <= 20000) break;
+        result.selected.pop(); result.truncated = true;
+      }
+    }
+    result.omitted = ranked.length - result.selected.length;
+    while (estimatedTokens(JSON.stringify(result)) > this.budget - result.reserved && result.candidates.length) { result.candidates.pop(); result.truncated = true; }
+    result.truncated ||= result.omitted > 0;
+    while (JSON.stringify(result).length > 20000 && result.selected.length) { result.selected.pop(); result.truncated = true; }
+    while (JSON.stringify(result).length > 20000 && result.candidates.length) { result.candidates.pop(); result.truncated = true; }
+    result.omitted = ranked.length - result.selected.length;
+    result.estimatedTokens = estimatedTokens(JSON.stringify(result));
+    result.estimatedTokens = estimatedTokens(JSON.stringify(result));
+    if (result.estimatedTokens + result.reserved > this.budget) throw new ForgePilotError('Context metadata exceeds budget. Shorten the query.');
+    return result;
+  }
+}
