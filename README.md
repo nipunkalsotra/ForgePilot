@@ -1,8 +1,21 @@
-# ForgePilot — Phase 1
+# ForgePilot — Phase 2
 
-A read-only VS Code agent foundation powered by an existing **TrueForge saved agent**. The extension creates named sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
+A VS Code inline-editing agent powered by an existing **TrueForge saved agent**. The extension creates named sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
 
-Phase 1 exposes only `list_files`, `read_file`, and `search_workspace`. Inline edits, diffs, writes, terminal execution, and autonomous modification belong to later phases and are not implemented.
+Phase 1 read-only sessions retain `list_files`, `read_file`, and `search_workspace`. Phase 2 adds an opt-in `propose_patch` MCP tool, genuine TrueForge staging approval, native VS Code hunk review, approved buffer edits, cancellation and guarded undo. Terminal execution and autonomous multi-file modification remain outside this phase.
+
+## Inline editing
+
+1. Open a trusted local workspace, save the file, and select the code to modify.
+2. Press **Ctrl+Alt+I** (**Cmd+Alt+I** on macOS), or run **ForgePilot: Edit Selection**, and enter the instruction.
+3. Watch streamed text in **ForgePilot** Output. Choose **Allow Staging** when TrueForge requests tool approval. This grants permission to produce a proposal; it does not apply changes.
+4. Review the native original/proposed diff. In Explorer → **ForgePilot Patch Review**, select each hunk to jump to its diff and use its check/cross actions. The row shows pending, accepted or rejected. **Ctrl+Alt+R** opens keyboard review. Accept All and Reject All are available in the view toolbar and Command Palette.
+5. Run **ForgePilot: Apply Accepted Hunks** after reviewing every hunk. Only accepted hunks enter the editor buffer; save normally to write them to disk.
+6. Use **ForgePilot: Undo Last Accepted Edit** to restore exactly the previous content. Undo refuses if the document or file has changed subsequently. **ForgePilot: Cancel Turn** invalidates pending proposals and requests SDK cancellation for an active turn.
+
+Start with saved UTF-8 text files up to 64 KiB. Edits are confined to the selected region of one file. Proposals are ephemeral; close/reopen, external modifications or document version changes require a new proposal. Read-only and proposal sessions share the same saved agent, so run live verification commands sequentially.
+
+See [Phase 2 verification](docs/phase-2-verification.md) for actual live sessions, automated host results, Flask Task A, manual checks and limits. Automated approval drivers do not verify physical keypresses or warning-button clicks.
 
 ## Install and start
 
@@ -66,7 +79,7 @@ The companion is a single child process with no descendants. It receives a rando
 
 On stop, ForgePilot cancels any active backend turn, removes only its own agent attachment, deletes its connector, and stops the child. Sessions and tool history remain in TrueForge. Failed backend cancellation immediately closes the companion to revoke workspace access. Registry cleanup failure is reported with the exact connector name. Hard termination can leave a stale registry entry, though the process closes on IPC loss: remove that `forgepilot-…` entry from the agent first, then from **Settings → Connectors**, before starting again.
 
-The saved-agent API replaces the manifest and has no conditional update mechanism. ForgePilot re-reads before attachment and cleanup to preserve unrelated fields, but **one active ForgePilot instance per saved agent** is supported. Other attached connectors are rejected; concurrent edits to that agent must be avoided. Pauses for tool approval, user questions, or authentication produce a clear error and backend cancellation; Phase 1 does not supply automatic answers or approvals.
+The saved-agent API replaces the manifest and has no conditional update mechanism. ForgePilot re-reads before attachment and cleanup to preserve unrelated fields, but **one active ForgePilot instance per saved agent** is supported. Other attached connectors are rejected; concurrent edits to that agent must be avoided. Read-only turns still reject interactive requests. Inline turns handle only exact `propose_patch` approval requests through the genuine SDK `sessions.createTurnEvents` API; other interactive requests cancel safely. The agent has no apply, approve, shell or write tool.
 
 ## Workspace policy and budgets
 

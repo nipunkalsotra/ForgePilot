@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { editingHostTests, flaskHostTest } from './editing-host';
+import type { Editing } from '../src/editing';
 import { TrueForge } from '@truefoundry/trueforge-sdk';
 
 /** Runs inside a genuine VS Code Extension Development Host, not a VS Code mock. */
@@ -15,7 +17,12 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand('forgepilot.cancel');
   await vscode.commands.executeCommand('forgepilot.stop');
   console.log('PASS: VS Code loaded and activated ForgePilot; commands registered; idle cleanup succeeded.');
-  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') return;
+  if (process.env.FORGEPILOT_PHASE2_FLASK === '1') {
+    try { await flaskHostTest((extension.exports as { editing: Editing }).editing); }
+    finally { await vscode.commands.executeCommand('forgepilot.stop'); }
+    return;
+  }
+  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); return; }
   const client = new TrueForge({ baseUrl: 'http://localhost:8790', maxRetries: 0, timeoutInSeconds: 10 });
   const oldSessions = new Set((await client.sessions.list()).data.map(s => s.id));
   const connectorsBefore = (await client.mcpServers.list()).data.map(s => s.name).sort();

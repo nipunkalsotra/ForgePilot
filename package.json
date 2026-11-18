@@ -1,7 +1,7 @@
 {
   "name": "forgepilot",
   "displayName": "ForgePilot",
-  "description": "Read-only TrueForge agent foundation for VS Code.",
+  "description": "Safe inline editing and hunk review through TrueForge for VS Code.",
   "version": "0.1.0",
   "type": "module",
   "publisher": "nipunkalsotra",
@@ -48,6 +48,44 @@
       {
         "command": "forgepilot.setToken",
         "title": "ForgePilot: Set TrueForge Authentication Token"
+      },
+      {
+        "command": "forgepilot.inlineEdit",
+        "title": "ForgePilot: Edit Selection"
+      },
+      {
+        "command": "forgepilot.review",
+        "title": "ForgePilot: Review Patch Hunks"
+      },
+      {
+        "command": "forgepilot.showHunk",
+        "title": "ForgePilot: Show Hunk Diff"
+      },
+      {
+        "command": "forgepilot.acceptHunk",
+        "title": "ForgePilot: Accept Hunk",
+        "icon": "$(check)"
+      },
+      {
+        "command": "forgepilot.rejectHunk",
+        "title": "ForgePilot: Reject Hunk",
+        "icon": "$(close)"
+      },
+      {
+        "command": "forgepilot.acceptAll",
+        "title": "ForgePilot: Accept All Hunks"
+      },
+      {
+        "command": "forgepilot.rejectAll",
+        "title": "ForgePilot: Reject All Hunks"
+      },
+      {
+        "command": "forgepilot.apply",
+        "title": "ForgePilot: Apply Accepted Hunks"
+      },
+      {
+        "command": "forgepilot.undo",
+        "title": "ForgePilot: Undo Last Accepted Edit"
       }
     ],
     "configuration": {
@@ -74,6 +112,73 @@
           "description": "Overall turn deadline, including streaming."
         }
       }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "forgepilot.reviewView",
+          "name": "ForgePilot Patch Review"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "forgepilot.inlineEdit",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i",
+        "when": "editorTextFocus && editorHasSelection"
+      },
+      {
+        "command": "forgepilot.review",
+        "key": "ctrl+alt+r",
+        "mac": "cmd+alt+r"
+      }
+    ],
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "forgepilot.acceptHunk",
+          "when": "view == forgepilot.reviewView && viewItem == forgepilotHunk",
+          "group": "inline"
+        },
+        {
+          "command": "forgepilot.rejectHunk",
+          "when": "view == forgepilot.reviewView && viewItem == forgepilotHunk",
+          "group": "inline"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "forgepilot.review",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.acceptAll",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.rejectAll",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.apply",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.cancel",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        },
+        {
+          "command": "forgepilot.undo",
+          "when": "view == forgepilot.reviewView",
+          "group": "navigation"
+        }
+      ]
     }
   },
   "scripts": {
@@ -88,7 +193,8 @@
     "test:live": "npm run build && node --import tsx scripts/verify-live.ts",
     "test:extension": "npm run build && node --import tsx scripts/verify-extension.ts",
     "check": "npm run build && npm run lint && npm test",
-    "vscode:prepublish": "npm run build"
+    "vscode:prepublish": "npm run build",
+    "test:editing:live": "npm run build && node --import tsx scripts/verify-editing-live.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",

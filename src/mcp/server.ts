@@ -3,10 +3,11 @@ import { timingSafeEqual } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { patchSchema, renderPatch } from '../patch';
 import { LIMITS, Workspace } from '../workspace';
 import { ForgePilotError, publicError, type Logger } from '../log';
 
-function toolServer(workspace: Workspace, log: Logger): McpServer {
+function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpServer {
   const mcp = new McpServer({ name: 'forgepilot-workspace', version: '0.1.0' });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   const run = async (tool: string, fn: () => Promise<unknown>) => {
@@ -33,12 +34,21 @@ function toolServer(workspace: Workspace, log: Logger): McpServer {
     description: 'Case-sensitive literal text search in permitted workspace files. Returns at most 100 matches with 1-based line numbers. Check truncated and skippedFiles.',
     inputSchema: { query: z.string().min(1).max(200), path: z.string().max(1024).default('.') }, annotations,
   }, ({ query, path }) => run('search_workspace', () => workspace.search(query, path)));
+  if (proposals) mcp.registerTool('propose_patch', {
+    description: 'Propose bounded replacements in an existing file. Never writes files. Requires explicit TrueForge tool approval before staging, followed by separate editor hunk approval. oldText must match uniquely; baseHash is SHA-256 of original content.',
+    inputSchema: patchSchema.shape,
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  }, args => run('propose_patch', async () => {
+    const file = await workspace.readFile(args.path);
+    renderPatch(file.content, args);
+    return { kind: 'forgepilot.patch', patch: args };
+  }));
   return mcp;
 }
 
 export interface RunningServer { url: string; close(): Promise<void> }
 
-export async function startServer(root: string, token: string, log: Logger): Promise<RunningServer> {
+export async function startServer(root: string, token: string, log: Logger, proposals = false): Promise<RunningServer> {
   if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Expected a 256-bit random MCP token');
   const workspace = await Workspace.create(root);
   let active = 0;
@@ -56,7 +66,7 @@ export async function startServer(root: string, token: string, log: Logger): Pro
       if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
       if (active >= 8) { res.writeHead(429).end(); return; }
       active++;
-      const mcp = toolServer(workspace, log);
+      const mcp = toolServer(workspace, log, proposals);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       transports.add(transport);
       res.once('close', () => { void transport.close(); });
@@ -66,7 +76,7 @@ export async function startServer(root: string, token: string, log: Logger): Pro
         for await (const chunk of req) {
           const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
           size += buffer.length;
-          if (size > 16 * 1024) { res.writeHead(413).end(); return; }
+          if (size > (proposals ? 256 * 1024 : 16 * 1024)) { res.writeHead(413).end(); return; }
           chunks.push(buffer);
         }
         let body: unknown;

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -10,6 +10,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { startServer } from '../src/mcp/server';
 import { Companion } from '../src/companion';
+import { hash } from '../src/patch';
 
 test('real MCP HTTP discovery, tools, policy errors, authentication and shutdown', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-mcp-'));
@@ -73,4 +74,23 @@ test('companion terminates when parent IPC disappears', async () => {
     await Promise.race([exited, new Promise<never>((_, reject) => { const timer = setTimeout(() => reject(new Error('Orphan process remained')), 4000); timer.unref(); })]);
     assert.equal(child.exitCode, 0);
   } finally { if (child.exitCode === null) child.kill('SIGKILL'); }
+});
+
+test('opt-in proposal MCP validates structured edits and never writes files', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-proposal-mcp-'));
+  const content = 'const value = 1;\n';
+  await writeFile(path.join(root, 'source.ts'), content);
+  const token = randomBytes(32).toString('hex');
+  const server = await startServer(root, token, () => {}, true);
+  const client = new Client({ name: 'proposal-test', version: '1' });
+  try {
+    await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
+    const tools = await client.listTools(); assert.equal(tools.tools.length, 4);
+    const args = { path: 'source.ts', baseHash: hash(content), edits: [{ oldText: '1', newText: '2' }] };
+    const result = await client.callTool({ name: 'propose_patch', arguments: args });
+    assert.ok(!result.isError); assert.match(JSON.stringify(result), /forgepilot.patch/);
+    for (const arguments_ of [{ ...args, path: '../outside' }, { ...args, baseHash: '0'.repeat(64) }, { ...args, edits: [{ oldText: 'missing', newText: 'x' }] }])
+      assert.equal((await client.callTool({ name: 'propose_patch', arguments: arguments_ })).isError, true);
+    assert.equal(await readFile(path.join(root, 'source.ts'), 'utf8'), content);
+  } finally { await client.close(); await server.close(); await rm(root, { recursive: true, force: true }); }
 });
