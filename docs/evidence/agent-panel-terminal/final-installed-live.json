@@ -1,0 +1,38 @@
+{
+  "kind": "genuine saved-agent inference through installed Agent Panel controller",
+  "physicalClicks": "NOT TESTED",
+  "attempts": [
+    {
+      "decision": "approve",
+      "sessionId": "01m7t05mz8nj74yn98t764dpyd",
+      "model": "google-gemini/gemini-3-1-flash-lite",
+      "state": "failed",
+      "error": "The request timed out. Pending proposals were invalidated; check provider availability before retrying.",
+      "tools": [
+        {
+          "id": "call_6126246636777858891",
+          "name": "context_query",
+          "phase": "completed",
+          "detail": "Repository context: ~122/12000 tokens. Inspect Context for selected files and reasons."
+        }
+      ],
+      "history": []
+    }
+  ],
+  "approvals": [],
+  "result": "CONDITIONAL",
+  "error": "The request timed out. Pending proposals were invalidated; check provider availability before retrying.\n+ actual - expected\n\n+ 'failed'\n- 'completed'\n",
+  "connectorCleanup": "PASS",
+  "buildIdentity": {
+    "vsixSHA256": "f481be5e8c3d93ef20b3a855cbaff76bcb6a4ef947cc034ff872b25e4dd0f50b",
+    "bundles": {
+      "dist/extension.cjs": "0f95f4b619a63f41b4833ea03d24b05ada4378b11270e0950ab14c98bcd6cd62",
+      "dist/mcp-child.cjs": "a0f590a0605f35b58d09e654c9fd3e5eee5fbd0e72c56931993da2342f084d7b",
+      "dist/THIRD_PARTY_NOTICES.txt": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "media/agent.js": "ee3cd8ab2fae7fc65b46730d27ad6ee7a519c3ae8411359aeedcc11d81f460e3",
+      "media/agent.css": "3daece25efe9b605c4592a62a9682855acabbe3f9f0759b0d46ae97a66342271",
+      "media/forgepilot.svg": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3"
+    }
+  },
+  "status": "BLOCKED \u2014 provider timeout after real context retrieval; no terminal approval/execution on this final repeat"
+}

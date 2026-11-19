@@ -1,0 +1,37 @@
+{
+  "result": "PASS",
+  "vsixSHA256": "e200cc6ffe31262db4e7fe49ea132f6ce08d70e9a4bd98e051aee3cba0aedcde",
+  "size": 508056,
+  "entries": 15,
+  "installedDirectory": "/home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0",
+  "hashes": {
+    "dist/extension.cjs": "c5829dbeb04ce93587cf576cb1f8b197963853a605724766244c283725ef0367",
+    "dist/mcp-child.cjs": "a0f590a0605f35b58d09e654c9fd3e5eee5fbd0e72c56931993da2342f084d7b",
+    "dist/THIRD_PARTY_NOTICES.txt": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+    "media/agent.js": "ee3cd8ab2fae7fc65b46730d27ad6ee7a519c3ae8411359aeedcc11d81f460e3",
+    "media/agent.css": "3daece25efe9b605c4592a62a9682855acabbe3f9f0759b0d46ae97a66342271",
+    "media/forgepilot.svg": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3"
+  },
+  "readmePackagedInstalledMatch": true,
+  "packagedNames": [
+    "extension.vsixmanifest",
+    "[Content_Types].xml",
+    "extension/package.json",
+    "extension/readme.md",
+    "extension/LICENSE.txt",
+    "extension/media/forgepilot.svg",
+    "extension/media/agent.js",
+    "extension/media/agent.css",
+    "extension/dist/mcp-child.cjs",
+    "extension/dist/extension.cjs",
+    "extension/dist/THIRD_PARTY_NOTICES.txt",
+    "extension/config/trueforge.env.example",
+    "extension/config/forge-coder.agent.json",
+    "extension/config/forge-coder-openrouter.agent.json",
+    "extension/config/forge-coder-gemini-high.agent.json"
+  ],
+  "vscodeVersion": "1.117.0",
+  "vscodeCommit": "10c8e557c8b9f9ed0a87f61f1c9a44bde731c409",
+  "commands": 26,
+  "physicalClicks": "NOT TESTED"
+}

@@ -1,0 +1,20 @@
+
+> forgepilot@0.1.0 test:extension
+> npm run build && node --import tsx scripts/verify-extension.ts
+
+
+> forgepilot@0.1.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+[487503:1119/185443.564421:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1631] vaInitialize failed: unknown libva error
+[90m[main 2026-11-19T13:24:43.742Z][0m update#setState disabled
+[90m[main 2026-11-19T13:24:43.743Z][0m update#ctor - updates are disabled by the environment
+Started local extension host with pid 488009.
+Loading development extension at /home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0
+Settings Sync: Account status changed from uninitialized to unavailable
+PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 26 palette contributions/registrations, autonomous invocation, idle cleanup.
+PASS: Installed Agent Panel genuine TrueForge approve Git-status check. 01m7szpbear3wy1qjkectcgjky
+PASS: Installed Agent Panel genuine TrueForge deny Git-status check. 01m7szphjy38yc9245wgyxmsan
+PASS: Installed Agent Panel genuine TrueForge cancel Git-status check. 01m7szqwsd3t4473swp6f3ad4r
+[90m[main 2026-11-19T13:25:47.722Z][0m Extension host with pid 488009 exited with code: 0, signal: unknown.
+Exit code:   0

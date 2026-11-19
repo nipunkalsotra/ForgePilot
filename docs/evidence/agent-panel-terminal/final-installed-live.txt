@@ -1,0 +1,31 @@
+[540741:1119/190304.872093:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1631] vaInitialize failed: unknown libva error
+[90m[main 2026-11-19T13:33:05.058Z][0m update#setState disabled
+[90m[main 2026-11-19T13:33:05.059Z][0m update#ctor - updates are disabled by the environment
+Started local extension host with pid 541245.
+Loading development extension at /home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0
+Settings Sync: Account status changed from uninitialized to unavailable
+PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 26 palette contributions/registrations, autonomous invocation, idle cleanup.
+AssertionError [ERR_ASSERTION]: The request timed out. Pending proposals were invalidated; check provider availability before retrying.
++ actual - expected
+
++ 'failed'
+- 'completed'
+
+	at panelLiveHost (/home/nipun/Documents/Projects/ForgePilot/dist/extension-test.cjs:50754:30)
+	at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+	at async Object.run2 (/home/nipun/Documents/Projects/ForgePilot/dist/extension-test.cjs:50899:5)
+[90m[main 2026-11-19T13:33:49.062Z][0m Extension host with pid 541245 exited with code: 0, signal: unknown.
+Exit code:   1
+/home/nipun/Documents/Projects/ForgePilot/node_modules/@vscode/test-electron/out/runTest.js:110
+                reject(new TestRunFailedError(code ?? undefined, signal ?? undefined));
+                       ^
+
+TestRunFailedError: Test run failed with code 1
+    at ChildProcess.onProcessClosed (/home/nipun/Documents/Projects/ForgePilot/node_modules/@vscode/test-electron/out/runTest.js:110:24)
+    at ChildProcess.emit (node:events:514:20)
+    at ChildProcess._handle.onexit (node:internal/child_process:294:12) {
+  code: 1,
+  signal: undefined
+}
+
+Node.js v26.7.0

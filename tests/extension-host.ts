@@ -13,6 +13,8 @@ import type { Autonomous } from '../src/autonomous';
 import { editingHostTests, flaskHostTest } from './editing-host';
 import type { Editing } from '../src/editing';
 import { TrueForge } from '@truefoundry/trueforge-sdk';
+import { panelHostTests, panelLiveHost, panelCorrectionLiveHost } from './panel-host';
+import type { AgentPanel } from '../src/panel';
 
 /** Runs inside a genuine VS Code Extension Development Host, not a VS Code mock. */
 export async function run(): Promise<void> {
@@ -23,6 +25,8 @@ export async function run(): Promise<void> {
   for (const name of ['extension.cjs', 'mcp-child.cjs']) assert.equal(
     createHash('sha256').update(await readFile(path.join(extension.extensionPath, 'dist', name))).digest('hex'), expected[name],
     `Loaded ${name} differs from the current build. Install the VSIX using the code CLI wrapper, then reload.`);
+  for (const [name, digest] of Object.entries(JSON.parse(process.env.FORGEPILOT_EXPECTED_MEDIA!) as Record<string, string>)) assert.equal(
+    createHash('sha256').update(await readFile(path.join(extension.extensionPath, 'media', name))).digest('hex'), digest, `Loaded panel asset ${name} differs from the current source.`);
   const manifest = extension.packageJSON as { main: string; contributes: { commands: { command: string; title: string }[] } };
   assert.match(await readFile(path.join(extension.extensionPath, manifest.main), 'utf8'), /forgepilot\.autonomous/);
   const contributed = manifest.contributes.commands;
@@ -41,6 +45,8 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand('forgepilot.stop');
   console.log(`PASS: Correct ForgePilot bundle loaded, command-triggered activation, all ${contributed.length} palette contributions/registrations, autonomous invocation, idle cleanup.`);
   if (process.env.FORGEPILOT_TASKC === '1') { await taskCHost(extension.exports as { editing: Editing; readonly recovery: RecoveryTrace[] }); return; }
+  if (process.env.FORGEPILOT_PANEL_LIVE === '1') { const api = extension.exports as { panel: AgentPanel; autonomous: Autonomous }; await panelLiveHost(api.panel, api.autonomous); return; }
+  if (process.env.FORGEPILOT_PANEL_CORRECTION_LIVE === '1') { const api = extension.exports as { panel: AgentPanel; autonomous: Autonomous }; await panelCorrectionLiveHost(api.panel, api.autonomous); return; }
   if (process.env.FORGEPILOT_AUTONOMOUS_LIVE === '1') { await autonomousLiveHost((extension.exports as { autonomous: Autonomous }).autonomous); return; }
   if (process.env.FORGEPILOT_PHASE3_FLASK === '1') {
     try { await taskBHost((extension.exports as { autonomous: Autonomous }).autonomous); }
@@ -52,7 +58,7 @@ export async function run(): Promise<void> {
     finally { await vscode.commands.executeCommand('forgepilot.stop'); }
     return;
   }
-  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); await batchHostTests(); await resilienceHostTests(); return; }
+  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { const api = extension.exports as { panel: AgentPanel; autonomous: Autonomous }; await panelHostTests(api.panel, api.autonomous); await editingHostTests(); await batchHostTests(); await resilienceHostTests(); return; }
   const client = new TrueForge({ baseUrl: 'http://localhost:8790', maxRetries: 0, timeoutInSeconds: 10 });
   const oldSessions = new Set((await client.sessions.list()).data.map(s => s.id));
   const connectorsBefore = (await client.mcpServers.list()).data.map(s => s.name).sort();

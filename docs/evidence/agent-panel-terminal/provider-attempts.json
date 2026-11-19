@@ -1,0 +1,74 @@
+{
+  "attempts": [
+    {
+      "timestamp": "2026-11-19T13:00:49.699Z",
+      "kind": "genuine TrueForge model + authenticated MCP; automated approval driver",
+      "physicalClicks": "NOT TESTED",
+      "attempts": [
+        {
+          "decision": "approve",
+          "sessionId": "01m7syafwd4410f54xr2rbfewd",
+          "model": "google-gemini/gemini-3-1-flash-lite",
+          "discoveredTools": [
+            "list_files",
+            "read_file",
+            "search_workspace",
+            "outline_file",
+            "discover_files",
+            "search_code",
+            "lookup_symbol",
+            "read_range",
+            "context_query",
+            "check_batch",
+            "list_drafts",
+            "draft_file",
+            "extend_draft",
+            "check_drafts",
+            "check_anchor",
+            "propose_drafts",
+            "propose_batch",
+            "run_command"
+          ]
+        }
+      ],
+      "result": "CONDITIONAL",
+      "error": "The model provider is unavailable (HTTP 502/503/504). Try later or configure a fallback agent."
+    },
+    {
+      "timestamp": "2026-11-19T13:05:28.384Z",
+      "kind": "genuine TrueForge model + authenticated MCP; automated approval driver",
+      "physicalClicks": "NOT TESTED",
+      "attempts": [
+        {
+          "decision": "approve",
+          "sessionId": "01m7syk00k188pm3ehpwzb684x",
+          "model": "openrouter/nemotron-3-ultra-free",
+          "discoveredTools": [
+            "list_files",
+            "read_file",
+            "search_workspace",
+            "outline_file",
+            "discover_files",
+            "search_code",
+            "lookup_symbol",
+            "read_range",
+            "context_query",
+            "check_batch",
+            "list_drafts",
+            "draft_file",
+            "extend_draft",
+            "check_drafts",
+            "check_anchor",
+            "propose_drafts",
+            "propose_batch",
+            "run_command"
+          ]
+        }
+      ],
+      "result": "CONDITIONAL",
+      "error": "The provider daily quota is exhausted. Wait for the quota reset or configure a fallback agent."
+    }
+  ],
+  "noFurtherModelRequestsAfterFinalTimeout": true,
+  "uncontrolledRetries": false
+}

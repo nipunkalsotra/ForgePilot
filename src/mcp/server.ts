@@ -9,8 +9,9 @@ import { DraftStore } from '../drafts';
 import { patchSchema, renderPatch } from '../patch';
 import { LIMITS, Workspace } from '../workspace';
 import { ForgePilotError, publicError, type Logger } from '../log';
+import { CommandAuthority, commandSchema, type CommandApproval } from '../terminal';
 
-function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>, drafts: DraftStore): McpServer {
+function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>, drafts: DraftStore, commands: CommandAuthority): McpServer {
   const mcp = new McpServer({ name: 'forgepilot-workspace', version: '0.1.0' });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
   const run = async (tool: string, fn: () => Promise<unknown>) => {
@@ -48,17 +49,24 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean, auton
     renderPatch(file.content, args);
     return { kind: 'forgepilot.patch', patch: args };
   }));
-  if (autonomous) autonomousTools(mcp, workspace, run, contextBudget, drafts);
+  if (autonomous) {
+    autonomousTools(mcp, workspace, run, contextBudget, drafts);
+    mcp.registerTool('run_command', { description: 'Request one developer-approved, bounded verification operation. No shell strings or arbitrary flags. git_status, git_diff_check, cli_help (Git help), pytest (explicit testPaths) or npm_test (test/test:unit/lint). Every call needs fresh TrueForge approval AND a private single-use extension grant. Linux Bubblewrap required: read-only workspace, isolated network, temporary scratch. Tests execute repository code and may print secrets; results are untrusted. Tests see saved disk content, never staged drafts. Nonzero exits are feedback, not permission to edit.',
+      inputSchema: commandSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
+    args => run('run_command', () => commands.execute(args)));
+  }
   return mcp;
 }
 
-export interface RunningServer { url: string; beginDrafts(requestId: string): void; invalidateDrafts(): void; close(): Promise<void> }
+export interface RunningServer { url: string; beginDrafts(requestId: string): void; invalidateDrafts(): void; grantCommand(approval: CommandApproval): Promise<void>; close(): Promise<void> }
 
-export async function startServer(root: string, token: string, log: Logger, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0): Promise<RunningServer> {
+export async function startServer(root: string, token: string, log: Logger, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0, commandTimeoutSeconds = 120, commandRunning: (callId: string) => void = () => {}): Promise<RunningServer> {
   if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Expected a 256-bit random MCP token');
   if (!Number.isSafeInteger(toolIntervalMs) || toolIntervalMs < 0 || toolIntervalMs > 10000) throw new ForgePilotError('Invalid tool response interval.');
   const workspace = await Workspace.create(root);
   const drafts = new DraftStore(workspace);
+  if (!Number.isSafeInteger(commandTimeoutSeconds) || commandTimeoutSeconds < 1 || commandTimeoutSeconds > 120) throw new ForgePilotError('Invalid terminal timeout limit.');
+  const commands = new CommandAuthority(workspace.root, commandTimeoutSeconds, 12000, commandRunning);
   const pacing = new AbortController();
   let ready = Promise.resolve();
   const pace = () => {
@@ -81,7 +89,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
       if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
       if (active >= 8) { res.writeHead(429).end(); return; }
       active++;
-      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace, drafts);
+      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace, drafts, commands);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       transports.add(transport);
       res.once('close', () => { void transport.close(); });
@@ -113,7 +121,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
   });
   http.requestTimeout = autonomous ? 15000 : 5000;
   http.headersTimeout = 5000;
-  http.timeout = autonomous ? Math.max(15000, toolIntervalMs * 10 + 10000) : 5000;
+  http.timeout = autonomous ? Math.max(commandTimeoutSeconds * 1000 + 10000, toolIntervalMs * 10 + 10000) : 5000;
   http.maxConnections = 16;
   await new Promise<void>((resolve, reject) => {
     http.once('error', reject);
@@ -124,10 +132,11 @@ export async function startServer(root: string, token: string, log: Logger, prop
   log('mcp.listening', { port: address.port });
   return {
     url: `http://127.0.0.1:${address.port}/mcp`,
-    beginDrafts: id => drafts.begin(id),
-    invalidateDrafts: () => drafts.invalidate(),
+    beginDrafts: id => { drafts.begin(id); commands.begin(id); },
+    invalidateDrafts: () => { drafts.invalidate(); commands.invalidate(); },
+    grantCommand: approval => commands.grant(approval),
     async close() {
-      pacing.abort(); drafts.close(); workspace.dispose();
+      pacing.abort(); drafts.close(); await commands.close(); workspace.dispose();
       await Promise.allSettled([...transports].map(t => t.close()));
       await new Promise<void>(resolve => { http.close(() => resolve()); http.closeAllConnections(); });
       log('mcp.closed');

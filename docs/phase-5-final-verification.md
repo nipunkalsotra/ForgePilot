@@ -1,5 +1,7 @@
 # Phase 5 final verification — 19 November 2026
 
+> **Dated evidence preserved.** The focused post-Phase-5 update implements the dedicated Agent sidebar and constrained, individually approved terminal MCP tool. Its current tests, genuine-model availability, installed bundle identity and remaining conditions are recorded in [Agent Panel / terminal verification](agent-panel-terminal-verification.md). The missing-capability statements below describe the original Phase 5 snapshot; these features are not retroactively attributed to Task B or that acceptance. This update is not Phase 6.
+
 ## 1. Executive summary
 
 **Technical automated/reproducibility gates: PASS. Overall Phase 5 verdict:

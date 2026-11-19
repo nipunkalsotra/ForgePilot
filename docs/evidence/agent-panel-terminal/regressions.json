@@ -1,0 +1,197 @@
+{
+  "result": "PASS",
+  "originalTests": 83,
+  "addedTests": 32,
+  "checks": [
+    {
+      "command": "npm run check",
+      "tests": 115,
+      "pass": 115,
+      "fail": 0,
+      "result": "PASS",
+      "retainedLog": "check.txt",
+      "logSHA256": "3c9b3f1183704e87c35c75671427d64e58ffc55c232e13f75cb34e0f17700557"
+    },
+    {
+      "command": "Node 22.23.5 tests",
+      "tests": 115,
+      "pass": 115,
+      "fail": 0,
+      "result": "PASS",
+      "retainedLog": "node22.txt",
+      "logSHA256": "1c2c80f496cee1edb9ff288b908435c0971ee7fb3092d0f11a52a4f8f69df1ce"
+    },
+    {
+      "command": "Node 24.22.3 tests",
+      "tests": 115,
+      "pass": 115,
+      "fail": 0,
+      "result": "PASS",
+      "retainedLog": "node24.txt",
+      "logSHA256": "3f1c57ab4fd281754d58bd3a7307b1bb15b0eb735708d9c008d0f0cb185da8d8"
+    }
+  ],
+  "npmCi": "PASS; unchanged lockfile",
+  "buildAndLint": "PASS",
+  "package": "PASS",
+  "npmAuditKnownVulnerabilities": 0,
+  "readOnlyLive": {
+    "timestamp": "2026-11-19T12:55:14.486Z",
+    "trueforgeVersion": "0.185.1",
+    "sdkVersion": "0.185.0",
+    "checks": {
+      "session": "PASS",
+      "streaming": "PASS",
+      "mcpExecution": "PASS",
+      "persistedToolHistory": "PASS",
+      "cleanup": "PASS",
+      "workspaceUnchanged": "PASS"
+    },
+    "sessionId": "01m7sy08gxgcjca5vjmt19rkjk",
+    "model": "google-gemini/gemini-3-1-flash-lite",
+    "textDeltaCount": 4,
+    "persistedToolNames": [
+      "read_file",
+      "list_files"
+    ],
+    "toolExecutions": [
+      "list_files",
+      "read_file"
+    ],
+    "workspaceHashesBefore": {
+      ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+      "src/inspection.txt": "b1de94029be4450e6d9a378775e787ccf354e8bb25cead605bbff0479a48f558"
+    },
+    "workspaceHashesAfter": {
+      ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+      "src/inspection.txt": "b1de94029be4450e6d9a378775e787ccf354e8bb25cead605bbff0479a48f558"
+    }
+  },
+  "editingLive": {
+    "timestamp": "2026-11-19T12:57:10.508Z",
+    "approvalDriver": "automated verification; not manual UI interaction",
+    "session": "01m7sy3ssrz7c5090qffs5cr08",
+    "model": "google-gemini/gemini-3-1-flash-lite",
+    "approvalEvents": [
+      {
+        "type": "turn.done",
+        "id": "01m7sy5q8jw56bswcnf1rsjm94"
+      },
+      {
+        "type": "model.message",
+        "id": "01m7sy4s66p3tp53ezf69m6ftn"
+      },
+      {
+        "type": "tool.response",
+        "id": "01m7sy4s63rgw9xdkdfvgqvgvw",
+        "callId": "call_4005155951748956664"
+      },
+      {
+        "type": "turn.update",
+        "id": "01m7sy4s5mybezgydzbk82bhw4"
+      },
+      {
+        "type": "user.tool_approval",
+        "id": "01m7sy4s5ak7p7wkg0kmjvd9ge"
+      },
+      {
+        "type": "turn.update",
+        "id": "01m7sy4s4rq6svprtcw4xdaha5"
+      },
+      {
+        "type": "tool.approval_required",
+        "id": "01m7sy4s4qm5m2t23h5znkpz3h"
+      },
+      {
+        "type": "model.message",
+        "id": "01m7sy3stp85r19h895np1y7h9"
+      },
+      {
+        "type": "mcp.initialize",
+        "id": "01m7sy3stnqn1vnnvezdd3zj26"
+      },
+      {
+        "type": "turn.created",
+        "id": "01m7sy3st8n2rsnz37r4z76gk5"
+      }
+    ],
+    "hunks": [
+      {
+        "id": "9cbfb93d-f914-43c8-b929-17b13fd79b53",
+        "start": 0,
+        "end": 24,
+        "newText": "export const first = 10;\n",
+        "line": 0,
+        "decision": "pending"
+      },
+      {
+        "id": "b981911f-20dd-467c-9ac3-89b036c6e050",
+        "start": 37,
+        "end": 62,
+        "newText": "export const second = 20;\n",
+        "line": 2,
+        "decision": "pending"
+      }
+    ],
+    "unchangedHash": "ba12d11e98d3f364012e88551db5a2ffc4c4b6fa65c6d31d26e58677a8ce50aa",
+    "cancelAfterStaging": "PASS",
+    "cancelWaitingForApproval": "PASS",
+    "cancelDuringStreaming": "PASS",
+    "result": "PASS"
+  },
+  "taskBOffline": {
+    "newAgentRun": false,
+    "result": "PASS",
+    "provenanceChain": "PASS: six exact payloads, six staging decisions, 22 hunk decisions",
+    "integrity": "PASS: clean pinned baseline, exact patch and three file hashes",
+    "pytest": [
+      {
+        "command": [
+          "/tmp/forgepilot-phase5-venv/bin/python",
+          "-m",
+          "pytest",
+          "tests/test_cli.py",
+          "-q"
+        ],
+        "exitCode": 0,
+        "resultLine": "59 passed in 0.18s"
+      },
+      {
+        "command": [
+          "/tmp/forgepilot-phase5-venv/bin/python",
+          "-m",
+          "pytest",
+          "tests/test_cli.py",
+          "tests/test_helpers.py",
+          "tests/test_config.py",
+          "-q"
+        ],
+        "exitCode": 0,
+        "resultLine": "113 passed in 0.29s"
+      }
+    ],
+    "allCommandExitCodes": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "acceptedPatchSHA256": "e4b549bc955fb604c9f22169ae90dc0998fb8e55274f70cfafdfb483b919272e"
+  },
+  "installedHost": {
+    "result": "PASS",
+    "commands": 26,
+    "actualRendererCspReadyHandshake": "PASS",
+    "retainedLog": "installed-host.txt",
+    "nativeProgressCancellationLabel": "PASS",
+    "undoClearsAppliedProposal": "PASS"
+  },
+  "physicalClicks": "NOT TESTED"
+}

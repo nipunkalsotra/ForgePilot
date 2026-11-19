@@ -5,6 +5,7 @@ import { Autonomous, type ReviewNode } from './autonomous';
 import { Editing } from './editing';
 import type { Hunk } from './patch';
 import { ForgePilotError, jsonLogger, publicError } from './log';
+import { AgentPanel } from './panel';
 
 let bridge: ResilientBridge | undefined;
 let starting: Promise<void> | undefined;
@@ -16,8 +17,9 @@ let autonomousController: Autonomous | undefined;
 let authorizedRoot: string | undefined;
 let output: vscode.OutputChannel;
 let logs: vscode.OutputChannel;
+let panel: AgentPanel | undefined;
 
-export function activate(context: vscode.ExtensionContext): { editing: Editing; autonomous: Autonomous; readonly recovery: ResilientBridge['evidence'] } {
+export function activate(context: vscode.ExtensionContext): { editing: Editing; autonomous: Autonomous; panel: AgentPanel; readonly recovery: ResilientBridge['evidence'] } {
   output = vscode.window.createOutputChannel('ForgePilot');
   logs = vscode.window.createOutputChannel('ForgePilot Logs');
   context.subscriptions.push(output, logs);
@@ -51,6 +53,7 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
         baseUrl: config.get<string>('baseUrl', 'http://localhost:8790'), agentName: config.get<string>('agentName', 'forge-coder'),
         turnTimeoutSeconds: config.get<number>('turnTimeoutSeconds', 180), root: folder.uri.fsPath,
         childPath: context.asAbsolutePath('dist/mcp-child.cjs'), proposals: enableEditing, autonomous: enableAutonomous, contextBudget: config.get<number>('contextBudget', 12000), toolIntervalMs: enableAutonomous ? config.get<number>('autonomousToolIntervalMs', 0) : 0, token: await context.secrets.get('trueforge.token'), log,
+        commandTimeoutSeconds: config.get<number>('commandTimeoutSeconds', 120),
       }, { enabled: config.get<boolean>('fallbackEnabled', false), agentName: config.get<string>('fallbackAgentName', ''), notify: message => { output.appendLine(`[recovery] ${message}`); void vscode.window.showInformationMessage(`ForgePilot: ${message}`); } });
       output.show(true);
       output.appendLine(`[starting ${enableAutonomous ? 'autonomous' : enableEditing ? 'proposal' : 'read-only'} session for ${folder.name}]`);
@@ -82,7 +85,7 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
       finally { subscription.dispose(); }
     });
   });
-  command('forgepilot.cancel', async () => { editing?.cancel(); autonomousController?.cancel(); await bridge?.cancel(); });
+  command('forgepilot.cancel', async () => { editing?.cancel(); await panel?.cancel(); autonomousController?.cancel(); await bridge?.cancel(); });
   command('forgepilot.stop', async () => {
     await stop();
     output.appendLine('[session stopped; local MCP access closed]');
@@ -118,7 +121,11 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
   autonomousController = autonomous;
   context.subscriptions.push(autonomous, vscode.workspace.registerTextDocumentContentProvider('forgepilot-agent', autonomous),
     vscode.window.createTreeView('forgepilot.batchView', { treeDataProvider: autonomous }));
-  command('forgepilot.autonomous', async instruction => { await autonomous.run(typeof instruction === 'string' ? instruction : undefined); });
+  const agentPanel = new AgentPanel(context.extensionUri, autonomous, async () => { await bridge?.cancel(); }, stop);
+  panel = agentPanel;
+  context.subscriptions.push(agentPanel, vscode.window.registerWebviewViewProvider('forgepilot.agentView', agentPanel));
+  command('forgepilot.autonomous', async instruction => { await agentPanel.focus(); if (typeof instruction === 'string' && instruction.trim()) await agentPanel.submit(instruction); });
+  command('forgepilot.newSession', async () => { await agentPanel.newSession(); await agentPanel.focus(); });
   command('forgepilot.batchDiff', async node => { await autonomous.showDiff(node as ReviewNode); });
   command('forgepilot.batchReview', async () => { await autonomous.picker(); });
   command('forgepilot.batchAccept', async node => { if (!node || typeof node !== 'object' || !('fileId' in node)) throw new ForgePilotError('Select a batch file or hunk.'); autonomous.review('accepted', node as ReviewNode); });
@@ -136,11 +143,12 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
   });
   context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => { void stop().catch(report); }));
   log('extension.activated');
-  return { editing: edits, autonomous, get recovery() { return bridge?.evidence ?? []; } };
+  return { editing: edits, autonomous, panel: agentPanel, get recovery() { return bridge?.evidence ?? []; } };
 }
 
 async function stop(): Promise<void> {
   editing?.cancel(); autonomousController?.cancel();
+  panel?.state.cancel();
   if (closing) return closing;
   closing = (async () => {
     await bridge?.cancel();

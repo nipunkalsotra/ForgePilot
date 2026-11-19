@@ -7,6 +7,12 @@ import { BatchStore, type BatchPatch, type DocumentBaseline } from './batch';
 import { EditCoordinator, type EditorHost, type EditorChange } from './coordinator';
 import type { ContextPackage } from './context';
 import { ForgePilotError } from './log';
+import type { AutonomousHooks } from './bridge';
+
+export interface AutonomousPresentation extends AutonomousHooks {
+  observe?: Parameters<AgentConnection['autonomous']>[4];
+  approvalState?: (waiting: boolean) => void;
+}
 
 export interface ReviewNode { fileId: string; hunkId?: string }
 class VsCodeEditorHost implements EditorHost {
@@ -84,7 +90,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
   provideTextDocumentContent(uri: vscode.Uri): string { return this.texts.get(uri.toString()) ?? ''; }
   dispose(): void { this.cancel(); this.changed.dispose(); this.textChanged.dispose(); }
   cancel(): void { this.epoch++; this.store?.cancel(); this.changed.fire(); }
-  async run(instruction?: string, approval?: (patch: BatchPatch, signal: AbortSignal) => Promise<boolean>, answer?: (question: { question: string; options: string[] }, signal: AbortSignal) => Promise<string | undefined>): Promise<void> {
+  async run(instruction?: string, approval?: (patch: BatchPatch, signal: AbortSignal) => Promise<boolean>, answer?: (question: { question: string; options: string[] }, signal: AbortSignal) => Promise<string | undefined>, presentation?: AutonomousPresentation): Promise<void> {
     if (this.busy) throw new ForgePilotError('An autonomous operation is already running.');
     this.cancel(); const epoch = this.epoch; this.busy = true;
     this.contexts = []; this.activity = []; this.responseTokens = 0; this.activityOmitted = 0; this.actualUsage = undefined;
@@ -102,27 +108,45 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
       await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'ForgePilot autonomous discovery and proposals', cancellable: true }, async (_, token) => {
         const subscription = token.onCancellationRequested(() => { this.cancel(); void bridge.cancel(); });
         try {
-          await bridge.autonomous(store, instruction!, text => this.output.append(text), approval ?? (async (batch, signal) => {
+          await bridge.autonomous(store, instruction!, text => { if (epoch === this.epoch) this.output.append(text); }, async (batch, signal) => {
+            if (signal.aborted || epoch !== this.epoch) return false;
+            presentation?.approvalState?.(true);
+            try {
+            if (approval) return await approval(batch, signal);
             const decision = await vscode.window.showWarningMessage(`TrueForge requests staging ${batch.files.length} file proposals. Individual hunk review is required before application.`, 'Allow Batch Staging', 'Reject');
             return !signal.aborted && epoch === this.epoch && decision === 'Allow Batch Staging';
-          }), observation => {
+            } finally { if (epoch === this.epoch) presentation?.approvalState?.(false); }
+          }, observation => {
             if (epoch !== this.epoch) return;
             this.responseTokens += Math.ceil(observation.responseBytes / 3);
             if (observation.context) this.contexts.push(observation.context);
-            if (this.activity.length < 150) this.activity.push({ tool: observation.tool, callId: observation.callId, result: observation.result, responseBytes: observation.responseBytes }); else this.activityOmitted++;
+            if (this.activity.length < 150) this.activity.push({ tool: observation.tool, callId: observation.callId, result: observation.tool === 'run_command' ? { output: 'Command output is transient in the Agent Panel; inspect TrueForge history if retained by the harness.' } : observation.result, responseBytes: observation.responseBytes }); else this.activityOmitted++;
+            presentation?.observe?.(observation);
             this.output.appendLine(`\n[${observation.tool}; call ${observation.callId}${observation.context ? `; context ~${observation.context.estimatedTokens}/${observation.context.budget} tokens` : ''}]`);
             this.refreshInspector();
           }, answer ?? (async (question, signal) => {
             if (signal.aborted) return undefined;
             const response = question.options.length ? await vscode.window.showQuickPick(question.options, { title: question.question }) : await vscode.window.showInputBox({ title: 'ForgePilot agent question', prompt: question.question, ignoreFocusOut: true });
             return signal.aborted || epoch !== this.epoch ? undefined : response;
-          }));
+          }), { ...presentation,
+            stream: (event, identity) => { if (epoch === this.epoch) presentation?.stream?.(event, identity); },
+            commandActivity: event => { if (epoch === this.epoch) presentation?.commandActivity?.(event); },
+            approveCommand: async (plan, correlation, signal) => {
+              if (!vscode.workspace.isTrusted || signal.aborted || epoch !== this.epoch) return false;
+              if (presentation?.approveCommand) return presentation.approveCommand(plan, correlation, signal);
+              const choice = await vscode.window.showWarningMessage('Allow this one agent verification command?', { modal: true,
+                detail: `Command: ${plan.executable}\nArguments: ${JSON.stringify(plan.args)}\nWorkspace: ${root}\nWorking directory: ${plan.directory}\nTimeout: ${plan.request.timeoutSeconds}s\n\n${plan.risk}\n\nApproval is for this command only. It does not approve staging or source edits.` }, 'Run Once', 'Reject');
+              return vscode.workspace.isTrusted && !signal.aborted && epoch === this.epoch && choice === 'Run Once';
+            },
+          });
         } finally { this.actualUsage = bridge.lastTurnMetrics; this.refreshInspector(); subscription.dispose(); }
       });
       if (epoch !== this.epoch) { store.cancel(); return; }
       this.changed.fire();
-      if (store.current?.files[0]) await this.showDiff({ fileId: store.current.files[0].id });
-      await vscode.commands.executeCommand('forgepilot.batchView.focus');
+      if (store.current?.files[0]) {
+        await this.showDiff({ fileId: store.current.files[0].id });
+        if (!presentation) await vscode.commands.executeCommand('forgepilot.batchView.focus');
+      }
     } catch (error) { this.store?.cancel(); this.changed.fire(); throw error; }
     finally { this.busy = false; }
   }
@@ -161,6 +185,6 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
   }
   async undo(): Promise<void> {
     if (this.busy || !this.lastApplied) throw new ForgePilotError('No batch available to undo.');
-    this.busy = true; try { await this.lastApplied.undo(); this.store?.cancel(); } finally { this.busy = false; this.changed.fire(); }
+    this.busy = true; try { await this.lastApplied.undo(); this.store?.cancel(); this.store = undefined; } finally { this.busy = false; this.changed.fire(); }
   }
 }

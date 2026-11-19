@@ -105,7 +105,7 @@ test('autonomous MCP exposes secure retrieval and no-write multi-file proposal t
   const client = new Client({ name: 'autonomous-test', version: '1' });
   try {
     await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
-    assert.equal((await client.listTools()).tools.length, 17);
+    assert.equal((await client.listTools()).tools.length, 18);
     for (const [name, args] of [['discover_files', { query: 'commands' }], ['lookup_symbol', { name: 'config_command' }], ['context_query', { query: 'config command' }], ['read_range', { path: 'commands.py', start: 1, count: 2 }]] as const) {
       const result = await client.callTool({ name, arguments: args }); assert.ok(!result.isError, JSON.stringify(result));
     }

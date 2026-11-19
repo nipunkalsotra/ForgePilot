@@ -10,13 +10,15 @@ const marker = `extension-host-${randomBytes(12).toString('hex')}`;
 const extensionPath = path.resolve(process.env.FORGEPILOT_EXTENSION_PATH ?? process.cwd());
 const expectedBundles = Object.fromEntries(await Promise.all(['extension.cjs', 'mcp-child.cjs'].map(async name => [name,
   createHash('sha256').update(await readFile(path.resolve('dist', name))).digest('hex')])));
+const expectedMedia = Object.fromEntries(await Promise.all(['agent.js', 'agent.css', 'forgepilot.svg'].map(async name => [name,
+  createHash('sha256').update(await readFile(path.resolve('media', name))).digest('hex')])));
 if (!process.env.FORGEPILOT_FLASK_ROOT) await writeFile(path.join(workspace, 'inspection.txt'), marker);
 try {
   await runTests({
     extensionDevelopmentPath: extensionPath, extensionTestsPath: path.resolve('dist/extension-test.cjs'),
     vscodeExecutablePath: process.env.VSCODE_EXECUTABLE_PATH,
     extensionTestsEnv: { FORGEPILOT_TEST_MARKER: marker, FORGEPILOT_ARTIFACTS: path.resolve('artifacts'), FORGEPILOT_EXPECTED_EXTENSION_PATH: extensionPath,
-      FORGEPILOT_EXPECTED_BUNDLES: JSON.stringify(expectedBundles) },
+      FORGEPILOT_EXPECTED_BUNDLES: JSON.stringify(expectedBundles), FORGEPILOT_EXPECTED_MEDIA: JSON.stringify(expectedMedia) },
     launchArgs: ['--disable-extensions', '--disable-gpu', '--skip-welcome', '--skip-release-notes', '--disable-workspace-trust',
       `--user-data-dir=${profile}`, workspace],
   });

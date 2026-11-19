@@ -11,6 +11,7 @@ flowchart LR
   TrueForge --> MCP[Authenticated companion MCP]
   MCP --> Workspace[Secure workspace reads]
   MCP --> Retrieval[Ranked context and bounded snippets]
+  MCP --> Terminal[Single-use approved sandbox verification]
   TrueForge --> ToolApproval[Human staging permission via SDK]
   ToolApproval --> Staging[Memory-only patch or batch]
   Staging --> Review[Native diffs and file/hunk decisions]
@@ -20,6 +21,18 @@ flowchart LR
 ```
 
 `Workspace` preserves path, symlink, hardlink, UTF-8, file-descriptor and size safeguards. Legacy reads remain limited to 64 KiB. Autonomous inventory uses fixed-argument `git ls-files --cached --others --exclude-standard` without hooks/fsmonitor or a bounded fallback walk. Every returned path is revalidated; Git tracking never grants authority to read a forbidden path. Line-range reading is a distinct, bounded API for larger sources. New-file proposals validate the existing parent and absence of a target without creating directories or files.
+
+## Post-Phase-5 Agent Panel and verification commands
+
+`AgentPanel` is a supported `WebviewViewProvider` in its own ForgePilot activity-bar container. Its local JavaScript/CSS uses VS Code theme variables, text nodes, semantic controls and collapsible tool rows. `PanelState` maps genuine SDK text deltas and tool activity into incremental messages; the provider batches delivery every 35 ms. Completed messages are displayed once, never split into invented streaming chunks. Full snapshots occur on initialization/request boundaries. Conversation/output remain in bounded process memory; authentication material is never sent to the webview or persisted with `setState`.
+
+The panel calls `Autonomous` → `ResilientBridge` → `Bridge`. Bounded prior conversation is carried as untrusted task data into each request's fresh backend session, preserving Phase 4 isolation. Visible backend identity comes from actual stream ownership. No model loop/provider API was added. Idle → running → awaiting approval → running → completed/failed/cancelled is presentation state only. Proposal status comes from `BatchStore`; native diffs, accepted/rejected counts, guarded apply and undo use existing components. Failed/cancelled generations cannot present a current proposal. New Session closes only owned backend state and preserves historical sessions.
+
+`run_command` is registered only for autonomous connectors, eagerly discoverable and listed in `requireApprovalForTools`. A strict typed schema selects fixed verification operations. Exact source-event/call/approval IDs are resolved through SDK events before native confirmation. A successful decision issues an acknowledged private-IPC grant bound to the current request scope, canonical command digest and directory identity. The companion consumes it before any await/spawn. Model/MCP/webview messages cannot issue grants. Staging permission grants no command authority. Denial executes zero times and may return normal feedback; a subsequent provider error after denial cannot trigger fallback.
+
+`CommandAuthority` revalidates paths, rejects symlinks/traversal and uses system Bubblewrap on Linux. Read-only workspace/system mounts, new PID/network/IPC namespaces, dropped capabilities, temporary scratch, minimal environment, process-group kill and parent-death handling constrain repository-controlled test code. Provider credentials/companion tokens are not inherited. Setup failure refuses execution. A private JSON status descriptor supplies command exit codes; wrapper failures never become invented command successes. stdout/stderr remain separate under a combined 12,000-byte bound. Timeout, overflow, cancellation, missing authority and sandbox unavailability have explicit outcomes. Known credential markers/control sequences are sanitized; unknown repository secrets can still appear. Output is transient in the panel; TrueForge can retain tool responses in history.
+
+Cancellation/stop/fallback invalidates pending grants, aborts commands and clears candidate proposals before another session. Terminal failure permits an otherwise healthy model turn to continue with actual feedback, retained drafts and new staging permission. Tests see saved disk content through read-only mounts and cannot apply patches. System pytest dependencies must exist in the exposed runtime; external environments, network installs and source-writing builds are unsupported. See [verification and limitations](agent-panel-terminal-verification.md). Historical Phase 3/4/5 evidence predates these capabilities.
 
 `ContextEngine` first enumerates permitted candidates, ranks filename and lexical evidence and extracts declaration/import relationships. It favors related implementation/test/documentation locations, then assembles short snippets within an explicit estimated-token and serialized-response budget. Candidate reasons, scan counts, truncation, omissions, selected content and file hashes are genuine tool outputs. The budget is per package. Additional tool messages and provider context compaction remain TrueForge's responsibility.
 

@@ -5,7 +5,7 @@ import { BatchStore, batchSchema } from '../batch';
 import { DraftStore, checkBatch } from '../drafts';
 import type { Workspace } from '../workspace';
 
-export const AUTONOMOUS_TOOLS = ['discover_files', 'search_code', 'lookup_symbol', 'outline_file', 'read_range', 'context_query', 'check_batch', 'propose_batch', 'draft_file', 'extend_draft', 'check_drafts', 'propose_drafts', 'check_anchor', 'list_drafts'];
+export const AUTONOMOUS_TOOLS = ['discover_files', 'search_code', 'lookup_symbol', 'outline_file', 'read_range', 'context_query', 'check_batch', 'propose_batch', 'draft_file', 'extend_draft', 'check_drafts', 'propose_drafts', 'check_anchor', 'list_drafts', 'run_command'];
 export const AUTONOMOUS_PROTOCOL = `ForgePilot proposal protocol (applies throughout context compaction):
 Discover with context_query once. Use outline_file on long files, then short read_range calls around relevant declarations/headings; avoid reading whole files sequentially. Give a short plan and execute it.
 Use small unique original anchors, not whole functions/files. Insert by replacing a few unchanged lines with those lines plus the addition. Hashes come only from actual reads. Never invent hashes or IDs.

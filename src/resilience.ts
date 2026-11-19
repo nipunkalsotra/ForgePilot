@@ -97,7 +97,7 @@ export class ResilientBridge implements AgentConnection {
       } finally { candidate.cancel(); }
     }, () => store.cancel());
   }
-  async autonomous(store: BatchStore, ...args: [string, Parameters<Bridge['autonomous']>[2], Parameters<Bridge['autonomous']>[3], Parameters<Bridge['autonomous']>[4]?, Parameters<Bridge['autonomous']>[5]?]): Promise<void> {
+  async autonomous(store: BatchStore, ...args: [string, Parameters<Bridge['autonomous']>[2], Parameters<Bridge['autonomous']>[3], Parameters<Bridge['autonomous']>[4]?, Parameters<Bridge['autonomous']>[5]?, Parameters<Bridge['autonomous']>[6]?]): Promise<void> {
     await this.execute(async (bridge, signal) => {
       const candidate = store.fork(); let approved: BatchPatch | undefined;
       try {
@@ -105,8 +105,9 @@ export class ResilientBridge implements AgentConnection {
           const allow = await args[2](patch, approvalSignal);
           if (allow && !signal.aborted && !approvalSignal.aborted) approved = structuredClone(patch);
           return allow;
-        }, event => { if (!signal.aborted) args[3]?.(event); }, args[4]);
+        }, event => { if (!signal.aborted) args[3]?.(event); }, args[4], args[5]);
         this.check(signal);
+        if (!candidate.current && args[5]?.allowNoProposal) return;
         if (!candidate.current?.generationSucceeded || !approved) throw new RequestFailure('invalid_proposal', 'local');
         await store.stage(approved, true); this.check(signal); store.complete();
       } finally { candidate.cancel(); }

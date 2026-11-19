@@ -1,5 +1,6 @@
 import { startServer, type RunningServer } from './server';
 import { jsonLogger } from '../log';
+import type { CommandApproval } from '../terminal';
 
 let server: RunningServer | undefined;
 let closing = false;
@@ -20,6 +21,14 @@ process.once('disconnect', () => { void stop(); });
 process.once('SIGTERM', () => { void stop(); });
 process.once('SIGINT', () => { void stop(); });
 process.on('message', (message: unknown) => {
+  if (!message || typeof message !== 'object' || !('type' in message) || message.type !== 'command-grant' || !('id' in message) || typeof message.id !== 'string') return;
+  void (async () => {
+    if (!server || closing || !('approval' in message)) throw new Error('Companion unavailable');
+    await server.grantCommand(message.approval as CommandApproval);
+    process.send?.({ type: 'command-ready', id: message.id, ok: true });
+  })().catch(() => process.send?.({ type: 'command-ready', id: message.id, ok: false }));
+});
+process.on('message', (message: unknown) => {
   if (!message || typeof message !== 'object' || !('type' in message) || message.type !== 'drafts' || !('id' in message) || typeof message.id !== 'string') return;
   try {
     if (!server || closing) throw new Error('Companion unavailable');
@@ -31,7 +40,7 @@ process.once('message', (message: unknown) => {
   void (async () => {
     if (typeof message !== 'object' || message === null || !('root' in message) || !('token' in message)
       || typeof message.root !== 'string' || typeof message.token !== 'string') throw new Error('Invalid initialization');
-    server = await startServer(message.root, message.token, log, 'proposals' in message && message.proposals === true, 'autonomous' in message && message.autonomous === true, 'contextBudget' in message && typeof message.contextBudget === 'number' ? message.contextBudget : 12000, 'toolIntervalMs' in message && typeof message.toolIntervalMs === 'number' ? message.toolIntervalMs : 0);
+    server = await startServer(message.root, message.token, log, 'proposals' in message && message.proposals === true, 'autonomous' in message && message.autonomous === true, 'contextBudget' in message && typeof message.contextBudget === 'number' ? message.contextBudget : 12000, 'toolIntervalMs' in message && typeof message.toolIntervalMs === 'number' ? message.toolIntervalMs : 0, 'commandTimeoutSeconds' in message && typeof message.commandTimeoutSeconds === 'number' ? message.commandTimeoutSeconds : 120, callId => process.send?.({ type: 'command-running', callId }));
     if (closing || !process.connected) { await server.close(); return; }
     clearTimeout(startup);
     process.send?.({ type: 'ready', url: server.url });

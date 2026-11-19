@@ -132,6 +132,10 @@
       {
         "command": "forgepilot.verificationTerminal",
         "title": "ForgePilot: Open Verification Terminal"
+      },
+      {
+        "command": "forgepilot.newSession",
+        "title": "ForgePilot: New Agent Session"
       }
     ],
     "configuration": {
@@ -184,6 +188,14 @@
           "default": "",
           "description": "Saved TrueForge agent authorized for fallback. Required when fallbackEnabled is true; no model is selected automatically.",
           "scope": "machine"
+        },
+        "forgepilot.commandTimeoutSeconds": {
+          "type": "number",
+          "default": 120,
+          "minimum": 1,
+          "maximum": 120,
+          "scope": "machine",
+          "description": "Maximum per-command runtime for individually approved agent verification commands. Requires Linux Bubblewrap; no unsandboxed fallback."
         }
       }
     },
@@ -196,6 +208,13 @@
         {
           "id": "forgepilot.batchView",
           "name": "ForgePilot Agent Changes"
+        }
+      ],
+      "forgepilot": [
+        {
+          "id": "forgepilot.agentView",
+          "name": "Agent",
+          "type": "webview"
         }
       ]
     },
@@ -305,6 +324,15 @@
           "command": "forgepilot.cancel",
           "when": "view == forgepilot.batchView",
           "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "forgepilot",
+          "title": "ForgePilot",
+          "icon": "media/forgepilot.svg"
         }
       ]
     }
