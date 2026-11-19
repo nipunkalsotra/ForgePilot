@@ -68,6 +68,13 @@ test('syntax preflight parses JSON/CommonJS without executing code, and reports 
       const r = await checkFile(f.workspace, { operation: 'create', path: name, content }); assert.equal(r.valid, false); assert.equal(r.code, 'SYNTAX_INVALID');
     }
     assert.equal((await checkFile(f.workspace, { operation: 'create', path: 'valid.cjs', content: 'throw new Error("never executed")' })).valid, true);
+    const commonjs = '#!/usr/bin/env node\nreturn;\n';
+    await writeFile(path.join(f.root, 'reference.cjs'), commonjs);
+    (await import('node:child_process')).execFileSync(process.execPath, ['--check', path.join(f.root, 'reference.cjs')]);
+    assert.equal((await checkFile(f.workspace, { operation: 'create', path: 'return.cjs', content: commonjs })).valid, true);
+    const jsonc = '// TypeScript configuration supports JSONC\n{"compilerOptions": {}}';
+    assert.equal((await import('typescript')).default.parseConfigFileTextToJson('tsconfig.json', jsonc).error, undefined);
+    assert.equal((await checkFile(f.workspace, { operation: 'create', path: 'tsconfig.json', content: jsonc })).valid, true);
     await assert.rejects(readFile(path.join(f.root, 'valid.cjs')));
   } finally { await f.close(); }
 });

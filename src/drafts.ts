@@ -1,4 +1,5 @@
 import { Script } from 'node:vm';
+import Module from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { BatchStore, parseBatch, type BatchPatch } from './batch';
 import { hash, PatchValidationError } from './patch';
@@ -36,8 +37,8 @@ export async function checkFile(workspace: Workspace, value: unknown): Promise<D
     const proposed = candidate.files[0]!.proposed;
     // Parse data and CommonJS only. Never execute source or resolve/import repository modules.
     try {
-      if (path?.endsWith('.json')) JSON.parse(proposed);
-      if (path?.endsWith('.cjs')) new Script(proposed);
+      if (path?.endsWith('.json') && !/(^|\/)(tsconfig|jsconfig)(\.[^/]+)?\.json$/i.test(path)) JSON.parse(proposed);
+      if (path?.endsWith('.cjs')) new Script(Module.wrap(proposed.replace(/^\uFEFF/, '').replace(/^#![^\r\n]*/, '')));
     } catch { return { path, valid: false, code: 'SYNTAX_INVALID', guidance: 'Proposed JSON/CommonJS syntax is invalid. Inspect and correct the retained replacements. No code was executed; behavioral verification remains required.' }; }
     return { path, valid: true };
   }
