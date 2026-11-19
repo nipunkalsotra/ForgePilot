@@ -63,3 +63,11 @@ test('shipped renderer updates collapsible tool rows and preserves a user scroll
   r.event({ type: 'tool', value: { id: 'call', name: 'run_command', phase: 'failed', detail: 'Exit 7\n<script>output</script>' } });
   assert.equal(r.get('tools').firstChild, row); assert.match(row.firstChild.textContent, /failed/); assert.equal(row.lastChild.tag, 'pre'); assert.equal(r.get('scroll').scrollTop, 0);
 });
+test('shipped renderer displays actual/configured/estimated/unknown budget labels as literal text', async () => {
+  const r = await renderer();
+  r.event({ type: 'usage', value: { mode: 'strict', configuredTaskTokens: 2000, actual: { total: 10 }, estimatedTokens: 100, estimatedRemaining: 1900, toolCalls: 2,
+    contextStatus: 'reduce retrieval', pacingMs: 500, warning: '<script>warning</script>', methodology: 'estimate' } });
+  const text = r.get('usage').textContent;
+  for (const label of ['ACTUAL', 'CONFIGURED', 'ESTIMATED', 'UNKNOWN', 'pacing active', '<script>warning</script>']) assert.ok(text.includes(label));
+  assert.equal(r.get('usage').children.length, 0);
+});

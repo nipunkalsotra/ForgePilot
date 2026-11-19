@@ -54,6 +54,7 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
         turnTimeoutSeconds: config.get<number>('turnTimeoutSeconds', 180), root: folder.uri.fsPath,
         childPath: context.asAbsolutePath('dist/mcp-child.cjs'), proposals: enableEditing, autonomous: enableAutonomous, contextBudget: config.get<number>('contextBudget', 12000), toolIntervalMs: enableAutonomous ? config.get<number>('autonomousToolIntervalMs', 0) : 0, token: await context.secrets.get('trueforge.token'), log,
         commandTimeoutSeconds: config.get<number>('commandTimeoutSeconds', 120),
+        budgetConfig: config.get('tokenBudget', {}),
       }, { enabled: config.get<boolean>('fallbackEnabled', false), agentName: config.get<string>('fallbackAgentName', ''), notify: message => { output.appendLine(`[recovery] ${message}`); void vscode.window.showInformationMessage(`ForgePilot: ${message}`); } });
       output.show(true);
       output.appendLine(`[starting ${enableAutonomous ? 'autonomous' : enableEditing ? 'proposal' : 'read-only'} session for ${folder.name}]`);

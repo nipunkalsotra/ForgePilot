@@ -23,7 +23,7 @@ export function permittedParts(parts: string[]): boolean {
 export class Workspace {
   private readonly jobs = new Set<ChildProcess>();
   private closed = false;
-  private constructor(readonly root: string) {}
+  private constructor(readonly root: string, private readonly rootIdentity: string) {}
   dispose(): void { this.closed = true; for (const job of this.jobs) job.kill('SIGKILL'); }
 
   static async create(root: string): Promise<Workspace> {
@@ -31,8 +31,9 @@ export class Workspace {
     if (resolved.split(path.sep).some(part => sensitiveRoots.has(part.toLowerCase()))) {
       throw new WorkspaceError('A credential, Git metadata, or agent configuration directory cannot be a workspace root.');
     }
-    if (!(await lstat(resolved)).isDirectory()) throw new WorkspaceError('Workspace root must be a directory.');
-    return new Workspace(resolved);
+    const info = await lstat(resolved);
+    if (!info.isDirectory()) throw new WorkspaceError('Workspace root must be a directory.');
+    return new Workspace(resolved, `${info.dev}:${info.ino}`);
   }
 
   private relative(input: string, directory = false): string[] {
@@ -52,6 +53,8 @@ export class Workspace {
   }
 
   private async resolve(input: string, directory = false): Promise<string> {
+    const authorized = await lstat(this.root);
+    if (this.closed || !authorized.isDirectory() || authorized.isSymbolicLink() || `${authorized.dev}:${authorized.ino}` !== this.rootIdentity) throw new WorkspaceError('Workspace authorization changed or is closed.');
     const parts = this.relative(input, directory);
     let current = this.root;
     for (const part of parts) {
@@ -67,6 +70,7 @@ export class Workspace {
 
   async readFile(input: string, byteLimit = LIMITS.fileBytes): Promise<{ path: string; content: string; bytes: number; identity: string }> {
     try {
+      if (this.closed) throw new WorkspaceError('Workspace access is closed.');
       if (!Number.isSafeInteger(byteLimit) || byteLimit < 1 || byteLimit > 1024 * 1024) throw new WorkspaceError('Invalid text read budget.');
       const canonical = await this.resolve(input);
       const pre = await lstat(canonical);
@@ -93,6 +97,8 @@ export class Workspace {
         const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
         if (bytesRead > byteLimit) throw new WorkspaceError('File exceeds 64 KiB.');
         const data = buffer.subarray(0, bytesRead);
+        const final = await handle.stat();
+        if (this.closed || final.size !== stat.size || final.mtimeMs !== stat.mtimeMs || final.ctimeMs !== stat.ctimeMs) throw new WorkspaceError('File changed during source read.');
         if (data.includes(0)) throw new WorkspaceError('Binary files are not readable.');
         let content: string;
         try { content = new TextDecoder('utf-8', { fatal: true }).decode(data); }

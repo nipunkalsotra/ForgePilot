@@ -32,6 +32,7 @@ export class AgentPanel implements vscode.WebviewViewProvider, vscode.Disposable
 <header><div><strong>ForgePilot</strong><span class="badge">AGENT</span></div><button id="new" title="New session" aria-label="New session">New Session</button></header>
 <div class="identity"><span id="model">Saved TrueForge agent</span><small id="backend"></small></div>
 <div class="status-row"><span id="state" role="status" aria-live="polite">idle</span><button id="stop" disabled>Stop</button><button id="context">Context</button></div>
+<section id="usage" aria-label="Token usage" hidden></section>
 <main id="scroll"><div id="welcome"><h2>Work through a change</h2><p>Describe the task. ForgePilot finds context and streams the TrueForge agent here.</p><p>Proposals stay staged until you review and apply accepted hunks.</p></div><section id="conversation" aria-label="Conversation" aria-live="off"></section><section id="activity" aria-label="Tool activity"><h3>Tool activity</h3><div id="tools"></div></section><section id="proposal" aria-label="Change proposal" hidden><h3 id="proposal-title"></h3><p id="proposal-note"></p><div id="files"></div><div class="actions"><button id="review">Review Changes</button><button id="apply">Apply Accepted</button><button id="undo">Undo Batch</button></div></section><p id="error" role="alert" hidden></p></main>
 <form id="composer"><label for="prompt">Message the agent</label><textarea id="prompt" rows="3" maxlength="16000" placeholder="Describe a task · @file:path · @symbol:name"></textarea><div class="compose-actions"><small>Ctrl/⌘ + Enter to send</small><button id="send" type="submit">Send</button></div></form>
 <script nonce="${nonce}" src="${script}"></script></body></html>`;
@@ -66,6 +67,7 @@ export class AgentPanel implements vscode.WebviewViewProvider, vscode.Disposable
       try {
         await this.autonomous.run(instruction, undefined, undefined, {
           allowNoProposal: true,
+          usage: state => { if (this.state.current(id)) this.state.budget(state); },
           stream: (event, identity) => { if (this.state.current(id)) this.state.stream(event, identity); },
           commandActivity: event => { if (this.state.current(id)) { this.state.tool(event.callId, 'run_command', event.phase, event.summary); this.state.status(event.phase === 'awaiting approval' ? 'awaiting approval' : 'running'); } },
           observe: event => {

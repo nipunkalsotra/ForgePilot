@@ -9,7 +9,7 @@ test('failure taxonomy uses bounded status and SDK/provider metadata', () => {
     [401, 'bad', 'credentials'], [403, 'bad', 'forbidden'], [429, 'limit', 'rate_limit'],
     [429, 'Rate limit exceeded: free-models-per-day', 'daily_quota'], [502, 'bad', 'provider_unavailable'],
     [503, 'bad', 'provider_unavailable'], [504, 'bad', 'provider_unavailable'], [404, 'unknown model', 'model_configuration'],
-    [0, 'getaddrinfo ENOTFOUND', 'network'], [0, 'ECONNREFUSED', 'network'], [0, 'EAI_AGAIN', 'network'],
+    [0, 'getaddrinfo ENOTFOUND', 'network'], [0, 'ECONNREFUSED', 'network'], [0, 'EAI_AGAIN', 'network'], [0, '[Model Error] Cannot connect to API:', 'network'],
     [0, 'Connection timed out', 'timeout'], [0, 'ETIMEDOUT', 'timeout'], [0, 'provider stream error', 'sdk_stream'],
   ] as const;
   for (const [status, message, expected] of cases) {
@@ -29,7 +29,7 @@ test('local conflicts, invalid patches, denied approvals and cancellation never 
   }
 });
 test('terminal provider errors preserve typed causes while public logs contain no raw body or credentials', () => {
-  for (const [message, kind] of [['Model invocation failed: AuthenticationError: 401 secret-token', 'credentials'], ['HTTP 503 secret-token', 'provider_unavailable'], ['Rate limit exceeded: free-models-per-day secret-token', 'daily_quota']] as const) {
+  for (const [message, kind] of [['Model invocation failed: AuthenticationError: 401 secret-token', 'credentials'], ['HTTP 503 secret-token', 'provider_unavailable'], ['[Model Error] Cannot connect to API:', 'network'], ['Rate limit exceeded: free-models-per-day secret-token', 'daily_quota']] as const) {
     assert.throws(() => requireSuccessfulCompletion({ status: 'error', message }), (error: unknown) => {
       assert.ok(error instanceof RequestFailure); assert.equal(error.kind, kind); assert.ok(!publicError(error).includes('secret-token')); return true;
     });

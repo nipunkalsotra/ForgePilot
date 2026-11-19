@@ -9,11 +9,15 @@ import { AUTONOMOUS_PROTOCOL, AUTONOMOUS_TOOLS } from './mcp/autonomous';
 import type { ContextPackage } from './context';
 import { requireSuccessfulCompletion } from './completion';
 import { ForgePilotError, type Logger } from './log';
-import { RequestFailure } from './failure';
+import { RequestFailure, classifyFailure } from './failure';
+import { TokenBudgetManager, type BudgetSnapshot } from './budget';
 import { planCommand, type CommandPlan, type CommandApproval } from './terminal';
 
 export interface AutonomousHooks {
   allowNoProposal?: boolean;
+  usage?: (state: BudgetSnapshot) => void;
+  /** Internal request accounting shared across the one authorized fallback. */
+  resources?: TokenBudgetManager;
   stream?: (event: TrueForgeApi.TurnStreamingEvent, identity: { sessionId?: string; modelName?: string }) => void;
   commandActivity?: (event: { callId: string; phase: 'awaiting approval' | 'approved' | 'rejected' | 'running'; summary: string; approvalEventId: string }) => void;
   approveCommand?: (plan: CommandPlan, correlation: Omit<CommandApproval, 'request' | 'binding'>, signal: AbortSignal) => Promise<boolean>;
@@ -34,6 +38,7 @@ export interface BridgeOptions {
   /** Snapshot a saved agent into a session; never attach tools to its shared manifest. */
   isolated?: boolean;
   commandTimeoutSeconds?: number;
+  budgetConfig?: unknown;
 }
 
 export class Bridge {
@@ -42,6 +47,7 @@ export class Bridge {
   readonly connectorName = `forgepilot-${randomBytes(8).toString('hex')}`;
   sessionId?: string;
   modelName?: string;
+  lastCheckpoint?: { status: 'unprivileged'; sessionId?: string; files: { path: string; baseHash?: string }[]; remaining: string; approval: 'revoked' };
   lastTurnMetrics?: TrueForgeApi.TurnMetrics;
   private agentId?: string;
   private registered = false;
@@ -56,6 +62,7 @@ export class Bridge {
   private readonly deadline: number;
 
   constructor(private readonly options: BridgeOptions) {
+    new TokenBudgetManager(options.budgetConfig);
     this.deadline = options.turnTimeoutSeconds ?? 180;
     if (!Number.isSafeInteger(options.toolIntervalMs ?? 0) || (options.toolIntervalMs ?? 0) < 0 || (options.toolIntervalMs ?? 0) > 10000) throw new ForgePilotError('Tool response interval must be 0–10,000 milliseconds.');
     if (!Number.isFinite(this.deadline) || this.deadline < 10 || this.deadline > 600) throw new ForgePilotError('Turn timeout must be 10–600 seconds.');
@@ -88,7 +95,7 @@ export class Bridge {
       this.validateAgent(agent.manifest);
       this.modelName = agent.manifest.model.name;
       if (this.options.isolated && !(await this.client.models.list(request)).data.some(m => m.name === this.modelName)) throw new RequestFailure('model_configuration', 'provider');
-      const url = await this.companion.start(this.options.root, this.options.proposals, this.options.autonomous, this.options.contextBudget, this.options.toolIntervalMs, this.options.commandTimeoutSeconds);
+      const url = await this.companion.start(this.options.root, this.options.proposals, this.options.autonomous, this.options.contextBudget, this.options.toolIntervalMs, this.options.commandTimeoutSeconds, this.options.budgetConfig);
       controller.signal.throwIfAborted();
       // Mark before writes so an ambiguous response/timeout still attempts rollback.
       this.registered = true;
@@ -104,11 +111,14 @@ export class Bridge {
       // Re-read before replacing the manifest to reduce lost updates. TrueForge has no conditional-update API.
       const { data: fresh } = await this.client.agents.get(this.agentId, request);
       this.validateAgent(fresh.manifest);
+      const resourceProfile = new TokenBudgetManager(this.options.budgetConfig); resourceProfile.identify({ model: this.modelName });
+      const compactionTokens = Math.min(64000, Math.max(2000, Math.floor((resourceProfile.enabled ? resourceProfile.profile()?.contextWindow ?? 128000 : 128000) * 0.5)));
       const manifest: TrueForgeApi.AgentSpec = { ...fresh.manifest,
+        ...(this.options.isolated && resourceProfile.enabled && resourceProfile.profile()?.maxOutputTokens ? { model: { ...fresh.manifest.model, params: { ...fresh.manifest.model.params, maxTokens: resourceProfile.profile()!.maxOutputTokens } } } : {}),
         ...(this.options.isolated && this.options.autonomous ? {
           instructions: `${fresh.manifest.instructions ?? ''}\n\n${AUTONOMOUS_PROTOCOL}`,
           config: { ...fresh.manifest.config, contextManagement: { ...fresh.manifest.config?.contextManagement,
-            compaction: { enabled: true, trigger: { type: 'input_tokens' as const, value: 64000 } } } },
+            compaction: { enabled: true, trigger: { type: 'input_tokens' as const, value: compactionTokens } } } },
         } : {}), mcpServers: [{
         name: this.connectorName, enableTools: expected, preload: !this.options.autonomous,
         ...(this.options.autonomous ? { preloadTools: ['context_query', 'outline_file', 'read_range', 'search_code', 'draft_file', 'extend_draft', 'list_drafts', 'check_drafts', 'propose_drafts', 'run_command'] } : {}),
@@ -199,6 +209,14 @@ Runtime requestId=${requestId} is managed privately; do not pass it to tools.
 ${this.options.isolated ? '' : AUTONOMOUS_PROTOCOL}
 Context/outline/range/search and draft tools are eager; inventory, symbol and legacy schemas are deferred. If needed, use TrueForge list_tools/get_tool_info before call_tool, with mcp_server=${this.connectorName}. read_range uses path/start/count (at most 200 lines). Never invent hashes, file contents or tool results.
 ${JSON.stringify({ instruction })}`;
+    const resources = hooks?.resources ?? new TokenBudgetManager(this.options.budgetConfig);
+    resources.identify({ model: this.modelName, sessionId: this.sessionId });
+    const carryEstimate = resources.snapshot().policyTokens;
+    const carryTools = resources.snapshot().toolCalls;
+    resources.beginAttempt(prompt);
+    const publishUsage = () => hooks?.usage?.(resources.snapshot());
+    publishUsage();
+    this.companion.resourceUsage = state => { resources.pacing(state.pacingMs); publishUsage(); };
     const calls = new Map<string, TrueForgeApi.ToolCall>();
     const sources = new Map<string, string>();
     const allowed = new Set<string>();
@@ -244,11 +262,17 @@ ${JSON.stringify({ instruction })}`;
       return { name: call.toolInfo.name, input };
     };
     try {
-      await this.companion.setDraftRequest(requestId);
+      if (resources.config.mode === 'strict' && (resources.snapshot().estimatedRemaining === 0 || resources.snapshot().malformedMetrics)) throw new RequestFailure('budget', 'local');
+      await this.companion.setDraftRequest(requestId, { prompt, model: this.modelName, spent: carryEstimate, tools: carryTools });
       if (epoch !== this.requestEpoch) throw new ForgePilotError('Turn cancelled before generation.');
       await this.runTurn(prompt, write, async (event, signal) => {
+        if (event.type === 'turn.created') { resources.identify({ turnId: event.turnId }); resources.metrics(this.sessionId!, event.turnId, undefined); }
+        if (event.type === 'turn.done') resources.metrics(this.sessionId!, resources.snapshot().turnId ?? requestId, event.state.metrics);
+        if (event.type === 'thread.context_compaction_finished') { resources.compact(); this.companion.resetContext(); }
+        if (event.type === 'model.message.delta' && event.content) resources.output(event.content);
+        publishUsage();
         hooks?.stream?.(event, { sessionId: this.sessionId, modelName: this.modelName });
-        if (event.type === 'model.message') for (const c of event.toolCalls ?? []) { calls.set(c.id, c); sources.set(c.id, event.id); }
+        if (event.type === 'model.message') for (const c of event.toolCalls ?? []) { resources.call(`${this.sessionId}:${c.id}`); calls.set(c.id, c); sources.set(c.id, event.id); }
         if (event.type === 'tool.response') {
           const call = await resolveCall(event.toolCallId, undefined, signal);
           const identity = toolIdentity(call);
@@ -264,6 +288,8 @@ ${JSON.stringify({ instruction })}`;
                 throw new ForgePilotError('Command result does not match the approved call.');
               authorizedCommands.delete(event.toolCallId);
             }
+            resources.tool(`${this.sessionId}:${event.toolCallId}`, identity.name, Buffer.byteLength(event.content), result); publishUsage();
+            if (result && typeof result === 'object' && 'kind' in result && result.kind === 'forgepilot.resource_stop') throw new RequestFailure('budget', 'local');
             const context = identity.name === 'context_query' && result && typeof result === 'object' && 'kind' in result && result.kind === 'forgepilot.context' ? result as ContextPackage : undefined;
             observe({ tool: identity.name, callId: event.toolCallId, result, responseBytes: Buffer.byteLength(event.content), context });
             if (['draft_file', 'extend_draft'].includes(identity.name) && result && typeof result === 'object' && 'valid' in result) {
@@ -333,11 +359,12 @@ ${JSON.stringify({ instruction })}`;
         if (accept) { allowed.add(ref.id); approvedPatches.set(ref.id, JSON.stringify(patch)); } else store.cancel();
         return [{ type: 'user.tool_approval', threadId: event.threadId, toolCallId: ref.id,
           approval: accept ? { status: 'allow' } : { status: 'deny', reason: 'Developer rejected batch staging.' } }];
-      }, true, id => terminalCalls.has(id));
+      }, true, id => terminalCalls.has(id), { resources, publish: publishUsage });
       if (store.current || !hooks?.allowNoProposal) store.complete();
-    } catch (error) { store.cancel(); throw error; }
+    } catch (error) { resources.metrics(this.sessionId!, resources.snapshot().turnId ?? requestId, this.lastTurnMetrics); this.lastCheckpoint = { status: 'unprivileged', sessionId: this.sessionId, files: [...draftFiles.values()].slice(0, 12).map(f => ({ path: f.path, ...(f.operation === 'modify' ? { baseHash: f.baseHash } : {}) })), remaining: 'Revalidate source hashes and rebuild drafts in a fresh request; verification/completion unconfirmed.', approval: 'revoked' }; resources.fail(classifyFailure(error).kind); publishUsage(); store.cancel(); throw error; }
     finally {
       this.companion.commandRunning = undefined;
+      this.companion.resourceUsage = undefined;
       try { await this.companion.setDraftRequest().catch(() => this.companion.stop()); }
       finally { this.autonomousPending = false; }
     }
@@ -348,7 +375,7 @@ ${JSON.stringify({ instruction })}`;
     return this.runTurn(prompt, write, onEvent ? async event => { onEvent(event); return undefined; } : undefined);
   }
 
-  private async runTurn(prompt: string, write: (text: string) => void, onEvent?: (event: TrueForgeApi.TurnStreamingEvent, signal: AbortSignal) => Promise<TrueForgeApi.TurnUserEventMessage[] | undefined>, editing = false, continueDenied?: (id: string) => boolean): Promise<void> {
+  private async runTurn(prompt: string, write: (text: string) => void, onEvent?: (event: TrueForgeApi.TurnStreamingEvent, signal: AbortSignal) => Promise<TrueForgeApi.TurnUserEventMessage[] | undefined>, editing = false, continueDenied?: (id: string) => boolean, governor?: { resources: TokenBudgetManager; publish: () => void }): Promise<void> {
     if (this.stopping || !this.sessionId || !this.agentId || !this.companion.url) throw new ForgePilotError('Start a ForgePilot session first.');
     if (this.active) throw new ForgePilotError('A turn is already running. Cancel it before starting another.');
     if (!prompt.trim() || prompt.length > (editing ? 128_000 : 16_000)) throw new ForgePilotError('Enter an instruction of 1–16,000 characters.');
@@ -374,6 +401,7 @@ ${JSON.stringify({ instruction })}`;
       if (!manifest.mcpServers?.some(s => s.name === this.connectorName)) throw new ForgePilotError('Workspace connector was detached. Stop and start the session again.');
       let turnId: string | undefined;
       let terminal = false;
+      await governor?.resources.pace(controller.signal, governor.publish);
       const stream = await this.client.sessions.createTurnStream(sessionId, { input: [{ type: 'user.message', content: prompt }] },
         { abortSignal: controller.signal, timeoutInSeconds: this.deadline, maxRetries: 0 });
       for await (const event of stream) {

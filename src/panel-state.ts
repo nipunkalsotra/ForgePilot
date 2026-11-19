@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { TrueForgeApi } from '@truefoundry/trueforge-sdk';
 import type { BatchProposal } from './batch';
+import type { BudgetSnapshot } from './budget';
 import { sanitizeCommandOutput } from './terminal';
 import type { ContextPackage } from './context';
 
@@ -27,16 +28,18 @@ export class PanelState {
   tools: ToolActivity[] = [];
   proposal: ProposalSummary | null = null;
   error = '';
+  usage: BudgetSnapshot | null = null;
+  budget(state: BudgetSnapshot): void { this.usage = structuredClone(state); this.emit({ type: 'usage', value: this.usage }); }
   private assistant?: ConversationMessage;
   private deltaThreads = new Set<string>();
   private listeners = new Set<(event: object) => void>();
   subscribe(listener: (event: object) => void): () => void { this.listeners.add(listener); return () => this.listeners.delete(listener); }
   private emit(event: object): void { for (const listener of this.listeners) listener({ ...event, sessionId: this.sessionId, requestId: this.requestId }); }
-  snapshot() { return structuredClone({ sessionId: this.sessionId, requestId: this.requestId, state: this.state, model: this.model, backendSession: this.backendSession, messages: this.messages, tools: this.tools, proposal: this.proposal, error: this.error }); }
+  snapshot() { return structuredClone({ sessionId: this.sessionId, requestId: this.requestId, state: this.state, model: this.model, backendSession: this.backendSession, messages: this.messages, tools: this.tools, proposal: this.proposal, usage: this.usage, error: this.error }); }
   get busy() { return this.state === 'running' || this.state === 'awaiting approval'; }
-  reset(): void { this.sessionId = randomUUID(); this.requestId = null; this.state = 'idle'; this.messages = []; this.tools = []; this.proposal = null; this.error = ''; this.assistant = undefined; this.backendSession = ''; this.model = 'Saved TrueForge agent'; this.deltaThreads.clear(); this.emit({ type: 'snapshot', value: this.snapshot() }); }
+  reset(): void { this.sessionId = randomUUID(); this.requestId = null; this.state = 'idle'; this.usage = null; this.messages = []; this.tools = []; this.proposal = null; this.error = ''; this.assistant = undefined; this.backendSession = ''; this.model = 'Saved TrueForge agent'; this.deltaThreads.clear(); this.emit({ type: 'snapshot', value: this.snapshot() }); }
   begin(text: string): string {
-    this.requestId = randomUUID(); this.error = ''; this.proposal = null; this.assistant = undefined; this.tools = []; this.deltaThreads.clear();
+    this.requestId = randomUUID(); this.error = ''; this.usage = null; this.proposal = null; this.assistant = undefined; this.tools = []; this.deltaThreads.clear();
     if (this.messages.length >= 40) this.messages.splice(0, this.messages.length - 38);
     this.messages.push({ id: randomUUID(), role: 'user', text }); this.state = 'running';
     this.emit({ type: 'snapshot', value: this.snapshot() }); return this.requestId;

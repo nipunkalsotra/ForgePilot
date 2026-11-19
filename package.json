@@ -196,6 +196,90 @@
           "maximum": 120,
           "scope": "machine",
           "description": "Maximum per-command runtime for individually approved agent verification commands. Requires Linux Bubblewrap; no unsandboxed fallback."
+        },
+        "forgepilot.tokenBudget": {
+          "type": "object",
+          "scope": "machine",
+          "default": {
+            "mode": "off"
+          },
+          "additionalProperties": false,
+          "description": "Task resource policy. Conservative is recommended after configuration; off preserves existing behavior. Provider limits are local configuration, never account quota. Estimates are UTF-8 bytes/3; actual metrics arrive after a turn.",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "off",
+                "advisory",
+                "conservative",
+                "strict"
+              ],
+              "default": "off"
+            },
+            "taskTokens": {
+              "type": "integer",
+              "minimum": 2000,
+              "maximum": 10000000
+            },
+            "maxToolCalls": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 500,
+              "default": 100
+            },
+            "maxValidationFailures": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 4
+            },
+            "maxRepeatedSearches": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 3
+            },
+            "provider": {
+              "type": "object",
+              "required": [
+                "model"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "model": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "contextWindow": {
+                  "type": "integer",
+                  "minimum": 2000,
+                  "maximum": 2000000
+                },
+                "maxOutputTokens": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 200000
+                },
+                "inputTokensPerMinute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100000000
+                },
+                "requestsPerMinute": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10000
+                },
+                "safetyMargin": {
+                  "type": "number",
+                  "minimum": 0.05,
+                  "maximum": 0.5,
+                  "default": 0.2
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -353,7 +437,8 @@
     "check": "npm run build && npm run lint && npm test",
     "vscode:prepublish": "npm run build",
     "test:editing:live": "npm run build && node --import tsx scripts/verify-editing-live.ts",
-    "test:taskc": "npm run build && node --import tsx scripts/verify-taskc.ts"
+    "test:taskc": "npm run build && node --import tsx scripts/verify-taskc.ts",
+    "benchmark:context": "node --import tsx scripts/benchmark-context.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",

@@ -71,3 +71,31 @@ The state sequence is idle → primary setup/stream/approval → success, or fai
 Startup SDK operations receive abort signals; turns retain stream abort, backend cancellation and draft invalidation. Control-plane requests use a 10-second SDK timeout, backend cancellation five seconds, draft IPC five seconds, companion termination escalates after 2.5 seconds, and generation has a configurable 10–600-second deadline per attempt. Cleanup is awaited; an unacknowledged registry cleanup prevents fallback and closes local access. These are bounded individual operations, not a hard real-time overall SLA. No registry/turn/application mutation is blindly retried. No same-provider backoff policy was added; automatic fallback is the chosen recovery path.
 
 Progress/listeners are disposed in `finally`, busy flags reset on all exits, and session/model/connector/outcome/actual metrics are exposed as sanitized recovery evidence. The actual Task C host kept a 25ms timer running during provider errors and editing. This establishes event-loop responsiveness in that environment, not physical keyboard/mouse behavior or a guarantee of zero scheduling latency. Physical UI checks, Windows/macOS and competition recording remain pending.
+
+## Final engineering resource policy
+
+`TokenBudgetManager` supplies strict runtime configuration, cumulative per-turn
+SDK accounting and separately labelled UTF-8 estimates. Autonomous requests share
+one parent accounting object across the authorized one-time fallback; a new user
+request starts fresh. The companion receives only configuration and a bounded
+prompt/spend seed over private IPC. It gates tools before execution and paces
+responses against explicitly configured limits. The parent observes correlated
+SDK responses, tracks actual final metrics (including failed turns) and publishes
+usage to the panel. These are separate views of the same activity, never added
+together. Post-turn data cannot provide exact in-flight billing or provider-global
+rate enforcement. Quota remains unknown. Off is compatible; conservative is
+recommended. Strict stops nonessential tools, preserving checks/staging/cleanup.
+
+Context snapshots are local to one retrieval. Selected full-file hashes are
+revalidated before cached text supplies snippets; changed snapshots are omitted
+with truncation evidence. Range deduplication retains only hash/range keys (128),
+not source, and only suppresses a response if smaller. New scopes, invalidation
+and native TrueForge compaction clear those keys. The engine is shared across
+stateless HTTP transports inside the current companion scope.
+
+Current `list_drafts` metadata is a bounded checkpoint for native compaction,
+not a separate conversation store. Failed requests retain only path/hash progress,
+no draft IDs or grants. There is no cross-session restore. JSON/CommonJS preflight
+parses source without running it; imports and behavior remain unverified. Disposable
+candidate execution remains unsupported, preserving the sandbox/review boundary.
+See [final acceptance](final-engineering-acceptance.md) for current tests and limits.

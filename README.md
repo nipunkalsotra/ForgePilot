@@ -1,4 +1,4 @@
-# ForgePilot — Safe editing and model resilience
+# ForgePilot — TrueForge agent with reviewed edits and token budgets
 
 For local installation use the **CLI wrapper** (`code --install-extension ./artifacts/forgepilot.vsix --force`, or `/opt/visual-studio-code/bin/code` on this machine). `VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code` identifies the Electron executable for test-host launching; it is not the installation CLI. Host tests compare both loaded bundle hashes against the current build, so an older installed version cannot pass merely by exposing the same commands.
 
@@ -123,7 +123,7 @@ flowchart LR
     T -- SSE text deltas --> V
 ```
 
-The editor registers a temporary connector with `client.settings.mcpServers.create`, verifies tool discovery through TrueForge, and snapshots the restricted saved agent into an isolated session using `client.sessions.create({ agent: { spec: ... } })`. Only the owned connector and its mode-specific tools are attached to that session; the saved agent is preserved. Turns use `client.sessions.createTurnStream(session.id, { input: [...] })`. Legacy standalone read-only/inline drivers temporarily attach to the saved agent, restore its attachment state on cleanup, and must run sequentially. See [architecture](docs/architecture.md) for approval correlation and session isolation.
+The editor registers a temporary connector with `client.settings.mcpServers.create`, verifies tool discovery through TrueForge, and snapshots the restricted saved agent into an isolated session using `client.sessions.create({ agent: { spec: ... } })`. Only the owned connector and its mode-specific tools are attached to that session; the saved agent is preserved. Turns use `client.sessions.createTurnStream(session.id, { input: [...] })`. The live verification drivers also use isolated snapshots; saved agents and provider credentials are preserved. See [architecture](docs/architecture.md) for approval correlation and session isolation.
 
 The SDK decodes wire fields into camelCase. `model.message.delta` carries streamed text; completed `model.message` records with `toolCalls`, and correlated `tool.response` records, are available from `client.sessions.listEvents`. A successful HTTP connection alone does not establish model or tool execution.
 
@@ -134,6 +134,64 @@ The companion tracks bounded Git inventory subprocesses and approved sandbox com
 On stop, ForgePilot cancels any active backend turn, removes only its own agent attachment, deletes its connector, and stops the child. Sessions and tool history remain in TrueForge. Failed backend cancellation immediately closes the companion to revoke workspace access. Registry cleanup failure is reported with the exact connector name. Hard termination can leave a stale registry entry, though the process closes on IPC loss: remove that `forgepilot-…` entry from the agent first, then from **Settings → Connectors**, before starting again.
 
 The saved-agent API replaces the manifest and has no conditional update mechanism. ForgePilot re-reads before attachment and cleanup to preserve unrelated fields, but **one active ForgePilot instance per saved agent** is supported. Other attached connectors are rejected; concurrent edits to that agent must be avoided. Read-only turns still reject interactive requests. Inline turns handle only exact `propose_patch` approval requests; autonomous turns correlate `propose_batch` and supported native question responses through the genuine SDK `sessions.createTurnEvents` API; other interactive requests cancel safely. The agent has no apply, approve, shell or write tool.
+
+## Token-aware autonomous requests
+
+Set **User** setting `forgepilot.tokenBudget` (machine scoped). The default is
+`{"mode":"off"}` for compatibility; **conservative** is recommended:
+
+```json
+"forgepilot.tokenBudget": {
+  "mode": "conservative",
+  "taskTokens": 200000,
+  "maxToolCalls": 100,
+  "maxValidationFailures": 4,
+  "maxRepeatedSearches": 3
+}
+```
+
+The example task target is a local preference, not provider capacity. Advisory
+reports warnings without enforcement. Conservative reduces retrieval and bounds
+unproductive work. Strict also stops starting nonessential tools at the estimated
+or reported task target. Checks, genuine command approvals, final staging and
+cleanup remain available. A local policy stop cancels the backend and revokes
+pending authority; it cannot cap a model call already running inside TrueForge.
+Task accounting carries through the one explicitly enabled fallback.
+
+An optional `provider` object requires the exact registered `model` name and may
+set `contextWindow`, `maxOutputTokens`, `inputTokensPerMinute`,
+`requestsPerMinute`, and `safetyMargin` (0.05–0.5). Configure only independently
+known limits. A model mismatch disables that profile and warns. Output limits
+apply only to the isolated session, never the saved manifest. TPM/RPM pacing
+uses local response-boundary estimates and post-turn input metrics; TrueForge
+controls model calls. It is not a provider-global limiter and cannot observe other
+clients, batched calls or precise request timing. There is no account-balance API:
+provider remaining quota stays **UNKNOWN**.
+
+The panel distinguishes ACTUAL SDK input/output/cache/reasoning/total counts,
+ESTIMATED spend and context, CONFIGURED targets and UNKNOWN values. Turn metrics
+are cumulative snapshots: updates replace counts for the same session/turn;
+cache/reasoning are never added again to total. The UTF-8 bytes/3 fallback includes
+estimated repeated conversation input at tool-response boundaries; hidden schemas,
+internal prompts, tokenization and in-flight usage remain unknown. This is a
+bounded-work policy, not an exact billing cap. Existing turn deadlines remain
+10–600 seconds. Inline/read-only flows retain their existing deadlines and review
+behavior; task policy is enforced for autonomous requests.
+
+Context queries reuse verified text within one retrieval and revalidate selected
+hashes. Repeated ranges return a smaller hash-attributed omission only when it
+saves bytes; edits, new scopes and native TrueForge compaction invalidate that
+suppression. No source cache is persisted. `list_drafts` returns bounded,
+unprivileged current-scope metadata for compaction recovery; expired IDs and all
+approvals remain unusable. Failed requests retain path/hash progress metadata,
+without automatic resume or authority replay. JSON/CommonJS drafts get a parse-only
+syntax preflight; other languages still require behavioral verification.
+
+Run `npm run benchmark:context` for the deterministic baseline comparison.
+[Final engineering acceptance](docs/final-engineering-acceptance.md) separates
+measured retrieval savings, provider evidence and remaining limits. Candidate
+execution in disposable workspaces is **unsupported**; `run_command` verifies
+saved files with fresh approval. Drafts never execute or write themselves.
 
 ## Workspace policy and budgets
 

@@ -38,7 +38,10 @@ export async function panelHostTests(panel: AgentPanel, autonomous: Autonomous):
     } finally { panel.receive = originalReceive; }
     const old = panel.state.sessionId;
     await panel.receive({ type: 'submit', sessionId: old, requestId: panel.state.requestId, text: 'Use failing verification feedback and propose the normal correction' });
-    assert.equal(panel.state.state, 'completed', panel.state.error); assert.equal(commandApprovals, 1); assert.equal(stagingApprovals, 1);
+    assert.equal(panel.state.state, 'completed', panel.state.error);
+    assert.ok(panel.state.usage && panel.state.usage.toolCalls >= 4, 'Real panel must receive correlated resource accounting');
+    assert.equal(panel.state.usage.providerQuota, 'UNKNOWN');
+    assert.equal(commandApprovals, 1); assert.equal(stagingApprovals, 1);
     assert.ok(panel.state.tools.some(t => t.name === 'run_command' && t.phase === 'failed' && t.detail.includes('Exit: 7')));
     assert.equal(panel.state.proposal?.status, 'staged'); assert.equal(panel.state.proposal?.files[0]?.pending, 1);
     assert.ok(panel.state.messages.some(m => m.role === 'assistant' && m.text.includes('actual failure feedback')));

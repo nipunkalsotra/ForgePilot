@@ -2,6 +2,7 @@ import { Bridge, type BridgeOptions } from './bridge';
 import { PatchStore } from './patch';
 import type { BatchPatch, BatchStore } from './batch';
 import { classifyFailure, RequestFailure } from './failure';
+import { TokenBudgetManager } from './budget';
 import { ForgePilotError } from './log';
 
 export type AgentConnection = Pick<Bridge, 'sessionId' | 'modelName' | 'lastTurnMetrics' | 'ask' | 'propose' | 'autonomous' | 'cancel' | 'stop'>;
@@ -98,6 +99,8 @@ export class ResilientBridge implements AgentConnection {
     }, () => store.cancel());
   }
   async autonomous(store: BatchStore, ...args: [string, Parameters<Bridge['autonomous']>[2], Parameters<Bridge['autonomous']>[3], Parameters<Bridge['autonomous']>[4]?, Parameters<Bridge['autonomous']>[5]?, Parameters<Bridge['autonomous']>[6]?]): Promise<void> {
+    const resources = new TokenBudgetManager(this.options.budgetConfig);
+    args[5] = { ...args[5], resources };
     await this.execute(async (bridge, signal) => {
       const candidate = store.fork(); let approved: BatchPatch | undefined;
       try {

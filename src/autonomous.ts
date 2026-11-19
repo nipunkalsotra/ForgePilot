@@ -129,6 +129,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
             const response = question.options.length ? await vscode.window.showQuickPick(question.options, { title: question.question }) : await vscode.window.showInputBox({ title: 'ForgePilot agent question', prompt: question.question, ignoreFocusOut: true });
             return signal.aborted || epoch !== this.epoch ? undefined : response;
           }), { ...presentation,
+            usage: state => { if (epoch === this.epoch) presentation?.usage?.(state); },
             stream: (event, identity) => { if (epoch === this.epoch) presentation?.stream?.(event, identity); },
             commandActivity: event => { if (epoch === this.epoch) presentation?.commandActivity?.(event); },
             approveCommand: async (plan, correlation, signal) => {

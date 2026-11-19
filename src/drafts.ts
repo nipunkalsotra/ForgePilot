@@ -1,3 +1,4 @@
+import { Script } from 'node:vm';
 import { randomUUID } from 'node:crypto';
 import { BatchStore, parseBatch, type BatchPatch } from './batch';
 import { hash, PatchValidationError } from './patch';
@@ -30,7 +31,16 @@ export async function checkFile(workspace: Workspace, value: unknown): Promise<D
   if (file.operation !== 'modify' && file.operation !== 'create') return { path, valid: false, code: 'INVALID_OPERATION', guidance: guidance.INVALID_OPERATION };
   if (file.operation === 'create' && ('baseHash' in file || 'edits' in file)) return { path, valid: false, code: 'INVALID_OPERATION', guidance: 'baseHash/edits describe an existing-file replacement: use operation=modify and omit content. Create accepts only path/content for an absent target.' };
   if (file.operation === 'modify' && (!('baseHash' in file) || !('edits' in file) || 'content' in file)) return { path, valid: false, code: 'SCHEMA_INVALID', guidance: 'Modify requires path, baseHash and edits. Omit content; it is only valid for a new-file creation.' };
-  try { await new BatchStore(workspace).stage({ plan: 'Read-only draft validation', files: [value] }, true); return { path, valid: true }; }
+  try {
+    const candidate = await new BatchStore(workspace).stage({ plan: 'Read-only draft validation', files: [value] }, true);
+    const proposed = candidate.files[0]!.proposed;
+    // Parse data and CommonJS only. Never execute source or resolve/import repository modules.
+    try {
+      if (path?.endsWith('.json')) JSON.parse(proposed);
+      if (path?.endsWith('.cjs')) new Script(proposed);
+    } catch { return { path, valid: false, code: 'SYNTAX_INVALID', guidance: 'Proposed JSON/CommonJS syntax is invalid. Inspect and correct the retained replacements. No code was executed; behavioral verification remains required.' }; }
+    return { path, valid: true };
+  }
   catch (error) { return diagnostic(error, path); }
 }
 export async function checkBatch(workspace: Workspace, value: { plan: string; files: unknown[] }) {
@@ -55,7 +65,7 @@ export class DraftStore {
   constructor(private readonly workspace: Workspace) {}
   begin(requestId: string): void { this.scope(requestId); }
   requestId(): string { if (this.closed || !this.active) throw new ForgePilotError('No active draft request.'); return this.active; }
-  list() { this.requestId(); return { kind: 'forgepilot.drafts', drafts: [...this.files.values()].map(v => ({ draftId: v.id, path: v.file.path, operation: v.file.operation, ...(v.file.operation === 'modify' ? { baseHash: v.file.baseHash, edits: v.file.edits.length } : {}) })), validation: 'Last validated when retained; use check_drafts before staging. extend_draft adds disjoint edits; draft_file with replaceDraftId replaces ALL edits. Final propose_drafts needs every requested file ID.' }; }
+  list() { this.requestId(); return { kind: 'forgepilot.drafts', checkpoint: { scope: this.active, authority: 'none', restore: 'unsupported; current metadata only, fresh source validation and approvals required' }, drafts: [...this.files.values()].map(v => ({ draftId: v.id, path: v.file.path, operation: v.file.operation, ...(v.file.operation === 'modify' ? { baseHash: v.file.baseHash, edits: v.file.edits.length } : {}) })), validation: 'Last validated when retained; use check_drafts before staging. extend_draft adds disjoint edits; draft_file with replaceDraftId replaces ALL edits. Final propose_drafts needs every requested file ID.' }; }
   invalidate(): void { if (this.active) this.retired.add(this.active); this.active = undefined; this.files.clear(); }
   close(): void { this.closed = true; this.files.clear(); this.active = undefined; this.retired.clear(); }
   private scope(requestId: string): void {

@@ -1,7 +1,8 @@
 import { ForgePilotError } from './errors';
 
-export type FailureKind = 'credentials' | 'forbidden' | 'model_configuration' | 'agent_policy' | 'rate_limit' | 'daily_quota' | 'provider_unavailable' | 'network' | 'timeout' | 'sdk_stream' | 'invalid_proposal' | 'approval_denied' | 'cancelled' | 'conflict' | 'unknown';
+export type FailureKind = 'budget' | 'credentials' | 'forbidden' | 'model_configuration' | 'agent_policy' | 'rate_limit' | 'daily_quota' | 'provider_unavailable' | 'network' | 'timeout' | 'sdk_stream' | 'invalid_proposal' | 'approval_denied' | 'cancelled' | 'conflict' | 'unknown';
 const messages: Record<FailureKind, string> = {
+  budget: 'Configured resource policy stopped this task. Pending draft authority was revoked; no unapproved changes were applied. Start a fresh authorized request after reviewing the budget.',
   credentials: 'Provider authentication failed (HTTP 401). Check the API key in TrueForge; no unapproved changes were applied.',
   forbidden: 'Provider access was denied (HTTP 403). Check model permissions in TrueForge.',
   model_configuration: 'The saved agent or model configuration is missing or invalid. Check the agent and registered model in TrueForge.',
@@ -65,7 +66,7 @@ export function classifyFailure(error: unknown, origin: 'provider' | 'transport'
   else if (status === 429 || /rate.?limit|quota exceeded|resource.exhausted/i.test(text)) kind = 'rate_limit';
   else if (status && [502, 503, 504].includes(status) || origin === 'provider' && /provider.{0,20}(?:overload|unavailable)|high demand|service unavailable/i.test(text)) kind = 'provider_unavailable';
   else if (status === 408 || /timeout|timed out|ETIMEDOUT|UND_ERR_(?:CONNECT|HEADERS)_TIMEOUT/i.test(text)) kind = 'timeout';
-  else if (/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|fetch failed|connection.?error|connection refused|network error|failed to connect|unable to connect|all connection attempts failed/i.test(text)) kind = 'network';
+  else if (/ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|fetch failed|connection.?error|connection refused|network error|failed to connect|unable to connect|all connection attempts failed|cannot connect to API/i.test(text)) kind = 'network';
   else if (origin === 'provider' && (status === 404 || /model.{0,40}(?:not found|invalid|not configured|does not exist)|unknown model|bad port/i.test(text))) kind = 'model_configuration';
   else if (origin === 'provider' || /stream|TrueForgeError|parse|deserialize/i.test(text)) kind = 'sdk_stream';
   return new RequestFailure(kind, origin, error, status);
