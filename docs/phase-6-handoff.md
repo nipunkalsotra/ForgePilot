@@ -1,6 +1,11 @@
+<!-- Updated for token-aware engineering; historical Phase 5 evidence remains unchanged. -->
 # Phase 6 handoff — preparation only
 
-Phase 6 has **not** been executed. No video, submission PDF, portal upload,
+Phase 6 has **not** been executed. The current engineering verdict is **CONDITIONAL**:
+deterministic Node 22/24 and installed-host gates pass, but the sole fresh health
+request failed with a provider network error. Restore legitimate connectivity and
+pass the bounded live gates before attempting a new Task B or recording. See
+[final engineering acceptance](final-engineering-acceptance.md). No video, submission PDF, portal upload,
 publication, commit or push was created during Phase 5. Technical results and
 limitations are in [Phase 5 verification](phase-5-final-verification.md).
 
@@ -59,10 +64,10 @@ the SDK returned no monetary cost. Verify actual account costs before estimating
   It is for offline replay only. A demo generation must come from TrueForge.
 - Keep credentials/provider settings out of the recording. Use a dedicated
   synthetic test application outside the checkout for `flask config` output.
-- Decide how to disclose the missing dedicated agent panel and agent-accessible
-  MCP terminal command. The native InputBox/Output/tree and developer terminal
-  are the current implementation. These official capability gaps remain risks;
-  this handoff does not authorize a feature expansion or claim full eligibility.
+- Use the dedicated ForgePilot Agent panel and genuine approved `run_command` MCP
+  tool. Verify the installed package identity in the current
+  [engineering acceptance](final-engineering-acceptance.md). Candidate execution is
+  unsupported: commands see saved disk contents. Keep that distinction visible.
 
 ## Exact recording sequence
 
@@ -116,7 +121,7 @@ multi-file edits with undo; bounded failure/cancellation with explicit fallback.
 - Genuine fallback: `01m7sk6m8rtm0qqyh2t1fkq3e9` →
   `01m7sk6mrhhgtmc8z9fn6x7r8w`. Fresh Phase 5 live read/inline/installed-command
   sessions are recorded in [verification evidence](evidence/phase-5/).
-- Current outputs: 83 ForgePilot tests on Node 22/24, native installed-host
+- Historical Phase 5 outputs: 83 ForgePilot tests on Node 22/24, native installed-host
   assertions, 59 Flask CLI and 113 combined replay tests. Distinguish tests,
   offline reconstruction and genuine inference on screen/in captions.
 - Technical references: [README](../README.md), [architecture](architecture.md),
@@ -127,9 +132,9 @@ multi-file edits with undo; bounded failure/cancellation with explicit fallback.
 
 Confirm registration and team details; perform/record the walkthrough; produce
 the actual PDF and scorecard; verify all public links signed out; submit all three
-links in the portal before the deadline. Git delivery requires new authorization:
-Phase 5 changes are intentionally uncommitted/unpushed. Review and authorize
-commit/push on the existing branch when ready; PR #1 must stay open and `main`
+links in the portal before the deadline. Current engineering delivery is recorded in [final acceptance](final-engineering-acceptance.md);
+operator-controlled repository visibility and signed-out link checks remain.
+ PR #1 must stay open and `main`
 must remain unchanged. The new local documentation links will not work remotely
 until that authorized delivery. Marketplace publication is out of official scope.
 No further repository investigation should be needed before these operator steps.

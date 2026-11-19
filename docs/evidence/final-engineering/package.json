@@ -1,0 +1,72 @@
+{
+  "vsixSha256": "282551b425ab32b22b5c021157d41dbaf3a5f4e8ad68347df63d4825944eddc7",
+  "files": {
+    "dist/extension.cjs": {
+      "built": "f76b16a48172ac3a415e2f4c3b0592f4843cf761908cc3bb598fe6ae4f1de3e5",
+      "packaged": "f76b16a48172ac3a415e2f4c3b0592f4843cf761908cc3bb598fe6ae4f1de3e5",
+      "installed": "f76b16a48172ac3a415e2f4c3b0592f4843cf761908cc3bb598fe6ae4f1de3e5",
+      "match": true
+    },
+    "dist/mcp-child.cjs": {
+      "built": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
+      "packaged": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
+      "installed": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
+      "match": true
+    },
+    "media/agent.js": {
+      "built": "fe77ce8d5c19956472f0628aef8bb6bb984e5bc85d87deb9711fd378567bb63d",
+      "packaged": "fe77ce8d5c19956472f0628aef8bb6bb984e5bc85d87deb9711fd378567bb63d",
+      "installed": "fe77ce8d5c19956472f0628aef8bb6bb984e5bc85d87deb9711fd378567bb63d",
+      "match": true
+    },
+    "media/agent.css": {
+      "built": "39696b0cbdd5a96d9277bd2139e54dd2e472a9b41f349c9d8a0e4e2f09017af1",
+      "packaged": "39696b0cbdd5a96d9277bd2139e54dd2e472a9b41f349c9d8a0e4e2f09017af1",
+      "installed": "39696b0cbdd5a96d9277bd2139e54dd2e472a9b41f349c9d8a0e4e2f09017af1",
+      "match": true
+    },
+    "media/forgepilot.svg": {
+      "built": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3",
+      "packaged": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3",
+      "installed": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3",
+      "match": true
+    },
+    "dist/THIRD_PARTY_NOTICES.txt": {
+      "built": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "packaged": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "installed": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "match": true
+    }
+  },
+  "credentialPatternMatches": [],
+  "entries": [
+    "extension.vsixmanifest",
+    "[Content_Types].xml",
+    "extension/package.json",
+    "extension/readme.md",
+    "extension/LICENSE.txt",
+    "extension/media/forgepilot.svg",
+    "extension/media/agent.js",
+    "extension/media/agent.css",
+    "extension/config/trueforge.env.example",
+    "extension/config/forge-coder.agent.json",
+    "extension/config/forge-coder-openrouter.agent.json",
+    "extension/config/forge-coder-gemini-high.agent.json",
+    "extension/dist/mcp-child.cjs",
+    "extension/dist/extension.cjs",
+    "extension/dist/THIRD_PARTY_NOTICES.txt"
+  ],
+  "manifestContributionsMatch": true,
+  "commands": 26,
+  "view": [
+    {
+      "id": "forgepilot.agentView",
+      "name": "Agent",
+      "type": "webview"
+    }
+  ],
+  "licenseEntries": [
+    "extension/LICENSE.txt",
+    "extension/dist/THIRD_PARTY_NOTICES.txt"
+  ]
+}

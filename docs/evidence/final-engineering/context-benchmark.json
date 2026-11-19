@@ -1,0 +1,121 @@
+{
+  "baselineCommit": "9c8df0e0321d09a128587409e5ac59c8191a2ec6",
+  "method": "Same fixture/task and 5 tool operations per variant; fresh workspace per repetition. Three runs, median latency. Response tokens are UTF-8 bytes/3 estimates, not provider usage. Repeated ranges deliberately exercise response deduplication. No inference or completion-rate comparison.",
+  "actualProviderTokens": "UNKNOWN: deterministic retrieval benchmark only",
+  "rows": [
+    {
+      "fixture": "small-python",
+      "files": 7,
+      "samples": [
+        {
+          "implementation": "9c8df0e-baseline",
+          "deterministic": {
+            "reads": 14,
+            "readBytes": 1108,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 3583,
+            "estimatedTokens": 1196,
+            "duplicateResponses": 0,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 16.82
+        },
+        {
+          "implementation": "optimized",
+          "deterministic": {
+            "reads": 14,
+            "readBytes": 1108,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 3447,
+            "estimatedTokens": 1150,
+            "duplicateResponses": 2,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 15.73
+        }
+      ]
+    },
+    {
+      "fixture": "large-python",
+      "files": 323,
+      "samples": [
+        {
+          "implementation": "9c8df0e-baseline",
+          "deterministic": {
+            "reads": 330,
+            "readBytes": 1000908,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 11329,
+            "estimatedTokens": 3778,
+            "duplicateResponses": 0,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 249.49
+        },
+        {
+          "implementation": "optimized",
+          "deterministic": {
+            "reads": 330,
+            "readBytes": 1000908,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 8165,
+            "estimatedTokens": 2724,
+            "duplicateResponses": 2,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 198.03
+        }
+      ]
+    },
+    {
+      "fixture": "mixed-nested",
+      "files": 93,
+      "samples": [
+        {
+          "implementation": "9c8df0e-baseline",
+          "deterministic": {
+            "reads": 100,
+            "readBytes": 251408,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 11633,
+            "estimatedTokens": 3881,
+            "duplicateResponses": 0,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 90.97
+        },
+        {
+          "implementation": "optimized",
+          "deterministic": {
+            "reads": 100,
+            "readBytes": 251408,
+            "contextPackages": 1,
+            "toolCalls": 5,
+            "responseBytes": 8469,
+            "estimatedTokens": 2825,
+            "duplicateResponses": 2,
+            "relevantDiscovered": 3,
+            "relevantExpected": 3,
+            "securityChecks": 3
+          },
+          "latencyMs": 99.92
+        }
+      ]
+    }
+  ]
+}
