@@ -34,3 +34,5 @@ textarea { resize: vertical; width: 100%; min-height: 64px; max-height: 240px; b
 #send { background: var(--vscode-button-background); color: var(--vscode-button-foreground); padding-inline: 14px; }
 [hidden] { display: none !important; }
 @media (max-width: 220px) { .compose-actions small { display: none; } header { flex-wrap: wrap; } }
+
+#usage { white-space: pre-wrap; font-size: 11px; padding: 8px 12px; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border); }

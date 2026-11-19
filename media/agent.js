@@ -37,13 +37,19 @@
     }
     $('apply').disabled = busy || value.status !== 'staged' || value.files.some(f => f.pending) || !value.files.some(f => f.accepted);
   };
+  const usage = value => {
+    $('usage').hidden = !value; if (!value) return;
+    const a = value.actual;
+    $('usage').textContent = `CONFIGURED task: ${value.configuredTaskTokens ?? 'UNKNOWN'} · ${value.mode}\nACTUAL total: ${a.total ?? 'UNKNOWN'}${value.actualComplete ? '' : ' (partial/unknown)'} (input ${a.input ?? '?'}, output ${a.output ?? '?'}, cache ${a.cachedInput ?? '?'}, reasoning ${a.reasoning ?? '?'})\nESTIMATED spend: ${value.estimatedTokens} · remaining ${value.estimatedRemaining ?? 'UNKNOWN'} · tools ${value.toolCalls}\nContext: ${value.contextStatus}${value.contextPackage ? ` · retrieval ~${value.contextPackage.estimatedTokens}/${value.contextPackage.budget} ESTIMATED` : ''} · provider quota UNKNOWN · pacing ${value.pacingMs ? 'active' : value.pacingStatus ?? 'UNKNOWN limits'}${value.warning ? '\n' + value.warning : ''}`;
+    $('usage').title = value.methodology;
+  };
   const identity = value => { $('model').textContent = value.model; $('backend').textContent = value.backendSession ? `Session ${value.backendSession}` : ''; };
   const snapshot = value => {
     if (!value.messages.length) followOutput = true;
     sessionId = value.sessionId; requestId = value.requestId;
     $('conversation').replaceChildren(); $('tools').replaceChildren(); bubbles.clear(); tools.clear(); $('welcome').hidden = value.messages.length > 0;
     for (const item of value.messages) message(item); for (const item of value.tools) tool(item);
-    identity(value); status(value.state, value.error); proposal(value.proposal);
+    usage(value.usage); identity(value); status(value.state, value.error); proposal(value.proposal);
   };
   const update = event => {
     if (event.type === 'snapshot') { snapshot(event.value); return; }
@@ -53,6 +59,7 @@
     if (event.type === 'tool') tool(event.value);
     if (event.type === 'status') status(event.state, event.error);
     if (event.type === 'identity') identity(event);
+    if (event.type === 'usage') usage(event.value);
     if (event.type === 'proposal') proposal(event.value);
   };
   window.addEventListener('message', ({ data }) => { if (data.type === 'snapshot') snapshot(data.value); if (data.type === 'events') for (const event of data.events) update(event); });
