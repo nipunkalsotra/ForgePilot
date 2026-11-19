@@ -4,8 +4,29 @@ import { ResilientBridge } from '../src/resilience';
 import { PatchStore } from '../src/patch';
 import { Workspace } from '../src/workspace';
 import { resilienceFixture } from './resilience-fixture';
+import { createServer } from 'node:net';
+import { Bridge } from '../src/bridge';
 
 async function store(f: Awaited<ReturnType<typeof resilienceFixture>>) { return new PatchStore(await Workspace.create(f.root), { path: 'resilience.ts', content: f.content, version: 1, start: 0, end: f.content.length }); }
+
+test('an unreachable primary endpoint falls back once to a configured SDK fixture with fresh approval', async () => {
+  const socket = createServer();
+  await new Promise<void>(resolve => socket.listen(0, '127.0.0.1', resolve));
+  const address = socket.address(); assert.ok(address && typeof address === 'object');
+  const unavailable = `http://127.0.0.1:${address.port}`;
+  await new Promise<void>(resolve => socket.close(() => resolve()));
+  const f = await resilienceFixture('valid');
+  const bridge = new ResilientBridge(f.options, { enabled: true, agentName: 'secondary' },
+    options => new Bridge({ ...options, baseUrl: options.agentName === 'primary' ? unavailable : f.options.baseUrl }));
+  try {
+    const target = await store(f); let approvals = 0;
+    await bridge.propose(target, 'change value', () => {}, async () => { approvals++; return true; });
+    assert.equal(bridge.evidence.length, 2); assert.equal(bridge.evidence[0]?.failure, 'network');
+    assert.equal(bridge.evidence[1]?.outcome, 'succeeded'); assert.equal(approvals, 1);
+    assert.equal(f.sessions.size, 1); assert.equal(target.current?.hunks[0]?.decision, 'pending');
+    assert.equal(await f.unchanged(), true);
+  } finally { await bridge.stop(); await f.close(); assert.equal(f.connectors.size, 0); }
+});
 
 test('SDK fallback uses fresh inline sessions, owned connectors and fresh approvals after staged failure', async () => {
   const f = await resilienceFixture('staged-error'); try {

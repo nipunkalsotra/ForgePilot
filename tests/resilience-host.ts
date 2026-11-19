@@ -14,10 +14,16 @@ export async function resilienceHostTests(): Promise<void> {
   const registration = vscode.workspace.registerTextDocumentContentProvider('forgepilot-resilience-host', editing);
   const uri = vscode.Uri.file(path.join(root, 'resilience.ts'));
   const doc = await vscode.workspace.openTextDocument(uri);
-  const select = async () => { const editor = await vscode.window.showTextDocument(doc);
-    for (let i = 0; i < 40 && vscode.window.activeTextEditor?.document.uri.toString() !== uri.toString(); i++) await delay(25);
+  const select = async () => {
+    await vscode.commands.executeCommand('workbench.action.closePanel');
+    let editor: vscode.TextEditor | undefined;
+    for (let i = 0; i < 40; i++) {
+      editor = await vscode.window.showTextDocument(doc, { preserveFocus: false, viewColumn: vscode.ViewColumn.One });
+      await delay(50);
+      if (vscode.window.activeTextEditor?.document.uri.toString() === uri.toString()) break;
+    }
     assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), uri.toString(), 'Fixture must capture the selected local editor after VS Code activation');
-    editor.selection = new vscode.Selection(doc.positionAt(0), doc.positionAt(doc.getText().length)); };
+    editor!.selection = new vscode.Selection(doc.positionAt(0), doc.positionAt(doc.getText().length)); };
   let ticks = 0; const timer = setInterval(() => { ticks++; }, 10);
   try {
     let approvals = 0; await select();

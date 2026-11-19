@@ -1,0 +1,22 @@
+{
+  "author": "Phase 5 engineer; manually produced and Ruff-formatted, not agent-generated acceptance",
+  "appliesAfter": "accepted.patch",
+  "patchSHA256": "5695f1c7f30a211b1787fcd0d978c57a221cbe560ec154e5cab46f9df058c674",
+  "files": [
+    {
+      "path": "docs/cli.rst",
+      "acceptedSHA256": "f35ce13d1dfe6b6f4ed4a7e18d0805dbcc75d4d3dc0e248adca3da13dcd06733",
+      "editorialSHA256": "6d042589d811703ba976d4e84cd31ef6d24b00a3c0d4f732922acd422560b014"
+    },
+    {
+      "path": "src/flask/cli.py",
+      "acceptedSHA256": "df333996fce761ca05e2a49810632e67c844caa7c4e2df6280b1571c11a9fb1b",
+      "editorialSHA256": "ee401f7196be646247d2c9dc1e729106d62c0ec36c5aede767997ba505dbcbde"
+    },
+    {
+      "path": "tests/test_cli.py",
+      "acceptedSHA256": "ffe1664711c02f21f2dbfe06423ea1fab747e05e43285bafc6cbd5a740b8dea0",
+      "editorialSHA256": "65f361a0bd16c0e71ceb9f50feb6a3074b52885c40d60d60a436052c24ccd8a7"
+    }
+  ]
+}

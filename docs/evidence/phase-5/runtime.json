@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "runtime": [
+    {
+      "pid": 71850,
+      "executable": "/home/nipun/.nvm/versions/node/v26.7.0/bin/node",
+      "startup": "OUTBOUND_URL_ALLOWED_HOSTS='[\"127.0.0.1\"]' node <cached TrueForge 0.185.1>/dist/cli.js --port 8790",
+      "openSQLiteFiles": [
+        "/home/nipun/.local/share/trueforge/db/db.sqlite",
+        "/home/nipun/.local/share/trueforge/db/db.sqlite-shm",
+        "/home/nipun/.local/share/trueforge/db/db.sqlite-wal"
+      ]
+    }
+  ],
+  "remainingCompanionProcesses": [],
+  "databaseResetReplacedOrExplicitlyMigrated": false,
+  "note": "Existing default SQLite database reused; original saved-agent IDs/hashes and historical sessions verified. Runtime intentionally left running for the operator."
+}

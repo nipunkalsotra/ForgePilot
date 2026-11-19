@@ -1,5 +1,7 @@
 # Phase 4 verification — model resilience and official Task C
 
+**Current-status note (Phase 5, 19 November):** This report preserves the earlier Phase 4 verification snapshot, including its then-pending Task B. Task B subsequently passed review-assisted multi-turn acceptance in `5dec056e`; see [final acceptance](phase-3-final-acceptance.md) and [Phase 5 verification](phase-5-final-verification.md). Counts, sessions and bundle hashes below refer to that earlier snapshot.
+
 ## 1. Executive summary
 
 **Phase 4: PASS for the automated and genuine live acceptance gates described below.** Verified 19 November 2026 on Linux, local TrueForge **0.185.1**, SDK **0.185.0**, VS Code **1.117.0**. All **79 tests** pass, including all original 65. Actual development and installed-VSIX hosts pass all 25 command registrations, native editing/batch regressions and new resilience checks. The installed extension completed genuine Task C with disposable broken providers and the already configured Gemini fallback. No model-provider calls were made by the extension itself.

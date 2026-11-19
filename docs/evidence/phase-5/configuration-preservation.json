@@ -1,0 +1,31 @@
+{
+  "agents": [
+    {
+      "name": "forge-coder",
+      "id": "01m7mk1a79ev6z2wzfq1kg094c",
+      "manifestSHA256": "2110d6d3362ae0b59a8bf660f42df7a27ce9850f12dd6bfab52302835704bf66",
+      "model": {
+        "name": "google-gemini/gemini-3-1-flash-lite",
+        "params": {
+          "reasoningEffort": "medium"
+        }
+      },
+      "unchanged": true
+    },
+    {
+      "name": "forge-coder-openrouter",
+      "id": "01m7r0mk2k23qermv2jfemmd6j",
+      "manifestSHA256": "8a1cfa874e1a1ff6b502a1d40987acf87aac9d6095c87c1d66d265e35925b854",
+      "model": {
+        "name": "openrouter/nemotron-3-ultra-free",
+        "params": {
+          "reasoningEffort": "high"
+        }
+      },
+      "unchanged": true
+    }
+  ],
+  "ownedConnectorsRemaining": 0,
+  "providerCredentialsReadOrChanged": false,
+  "temporaryProvidersOrAgentsCreatedInPhase5": false
+}

@@ -1,0 +1,150 @@
+{
+  "verifiedAt": "2026-11-19T11:33:02.277Z",
+  "source": "Read-only TrueForge sessions.listEvents; no inference requested",
+  "batches": [
+    {
+      "sessionId": "01m7se73xvn31zsj2sdwh36wyc",
+      "events": 72,
+      "callId": "call_13903382087166192192",
+      "approvalRequest": {
+        "id": "01m7see0c7k0p2r5qkxbt5n5az",
+        "toolCalls": [
+          {
+            "id": "call_13903382087166192192",
+            "sourceEventId": "01m7sedxacgk79jvp174dc82t2"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7see0f5pcg6mzmnpj8ncspc",
+        "toolCallId": "call_13903382087166192192",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7see5cptr3w5mcaq8rafje7",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    },
+    {
+      "sessionId": "01m7sek8a4c940q68y2k2nge8e",
+      "events": 61,
+      "callId": "call_16244707788298039492",
+      "approvalRequest": {
+        "id": "01m7serk5zja5bq72gwa9xrp4q",
+        "toolCalls": [
+          {
+            "id": "call_16244707788298039492",
+            "sourceEventId": "01m7serg3vgx1f07k9yc14fjy0"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7serk7tev6tga27xr6r52m9",
+        "toolCallId": "call_16244707788298039492",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7serr5t32j4tmn0k4a0rvyn",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    },
+    {
+      "sessionId": "01m7seyzd8ymg1cgw49wbtgyd9",
+      "events": 50,
+      "callId": "call_2645012548510165141",
+      "approvalRequest": {
+        "id": "01m7sf3c5t49tg333v0dhjbk5b",
+        "toolCalls": [
+          {
+            "id": "call_2645012548510165141",
+            "sourceEventId": "01m7sf39ghb0rhb7e77ycmy24f"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7sf3c8e845dgsbqb8srrkp9",
+        "toolCallId": "call_2645012548510165141",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7sf3h6a1kk8059rdgqqnm9n",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    },
+    {
+      "sessionId": "01m7sf9tkqr22tkn4wtmbe40cc",
+      "events": 81,
+      "callId": "call_12049888088886596154",
+      "approvalRequest": {
+        "id": "01m7sfhemms6nbaa8849mk2db8",
+        "toolCalls": [
+          {
+            "id": "call_12049888088886596154",
+            "sourceEventId": "01m7sfhck37mgbh80m877xq737"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7sfhep1vjxw7n0hgk0htejb",
+        "toolCallId": "call_12049888088886596154",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7sfhkjr2n3n5gjejqf9ynac",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    },
+    {
+      "sessionId": "01m7sg585par5c7kd4q7cptcwb",
+      "events": 30,
+      "callId": "call_9889814690301932014",
+      "approvalRequest": {
+        "id": "01m7sg7rc3tkr2zhzahvmm3k2b",
+        "toolCalls": [
+          {
+            "id": "call_9889814690301932014",
+            "sourceEventId": "01m7sg7pgr28x8dv848wfantyd"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7sg7rd43pyr100pvcxpwac4",
+        "toolCallId": "call_9889814690301932014",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7sg7x9y6f9e3yhgs0ny4rrb",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    },
+    {
+      "sessionId": "01m7sgcvvb0ysapthbdbnvd123",
+      "events": 32,
+      "callId": "call_14711200233828970376",
+      "approvalRequest": {
+        "id": "01m7sgfd09wd0va25nvw13b5zt",
+        "toolCalls": [
+          {
+            "id": "call_14711200233828970376",
+            "sourceEventId": "01m7sgfb9z20px61nfb556wa8m"
+          }
+        ]
+      },
+      "approval": {
+        "id": "01m7sgfd1sz0jy316myxn82x3w",
+        "toolCallId": "call_14711200233828970376",
+        "approval": {
+          "status": "allow"
+        }
+      },
+      "responseEventId": "01m7sgfhyzh6m9c8qvb98rxejr",
+      "terminalStatus": "done",
+      "exactPayloadMatchesArchive": true
+    }
+  ]
+}

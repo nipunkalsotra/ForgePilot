@@ -2,7 +2,16 @@
 
 For local installation use the **CLI wrapper** (`code --install-extension ./artifacts/forgepilot.vsix --force`, or `/opt/visual-studio-code/bin/code` on this machine). `VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code` identifies the Electron executable for test-host launching; it is not the installation CLI. Host tests compare both loaded bundle hashes against the current build, so an older installed version cannot pass merely by exposing the same commands.
 
-**Verification status:** Phase 4 resilience and official Task C have live/native-host verification; see [Phase 4 evidence](docs/phase-4-verification.md). Phase 2.1 is committed and passes its gate. Official Flask Task B now passes after genuine TrueForge multi-turn corrections: 59 CLI tests, built-in help registration and independently asserted masked JSON. See [final acceptance](docs/phase-3-final-acceptance.md) for the full approval/session evidence and remaining manual checks. This is not a single-turn clean-rehearsal claim.
+**Verification status:** Phase 3 has verified review-assisted, multi-turn Task B acceptance (six batches, 22 hunk decisions); Phase 4 has verified Task C and model resilience. Phase 5 results are in [final verification](docs/phase-5-final-verification.md); physical GUI acceptance remains required. Task B is reproducible without inference using the [archived accepted patch and replay instructions](docs/evidence/task-b/README.md). This does not establish unassisted single-turn reliability.
+
+| Phase | Current status |
+| --- | --- |
+| 1 | PASS — read-only TrueForge/MCP integration |
+| 2 / 2.1 | PASS — inline review, guarded application/undo and hardening |
+| 3 | PASS — verified multi-turn Task B acceptance |
+| 4 | PASS — verified Task C and resilience |
+| 5 | CONDITIONAL — automated/replay gates pass; physical GUI checks pending |
+| 6 | PENDING — demo, write-up and submission preparation |
 
 A VS Code inline-editing agent powered by an existing **TrueForge saved agent**. The extension snapshots saved agents into isolated TrueForge sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
 
@@ -22,7 +31,7 @@ Autonomous generation uses read-only `draft_file` validation for each file. `ext
 
 For long files, `outline_file` supplies bounded declaration/heading locations for targeted reads. Isolated autonomous sessions retain generic protocol rules in their agent instructions and use TrueForge-owned compaction at 64,000 input tokens, without changing the saved agents. Start with the default 0–1,000 ms response pacing when capacity permits. If actual provider evidence shows a tighter input-token limit, configure `forgepilot.autonomousToolIntervalMs` deliberately; Task B recovery tested 5,000 ms against Gemini's reported 250,000 free-tier input tokens/minute. Pacing does not retry inference or guarantee provider capacity.
 
-The verification driver now uses **0 ms** response pacing. Start at 0–1,000 ms when capacity permits; the previous serialized 10,000 ms setting added ten seconds per tool response. Pacing is not a retry loop or a guarantee against quotas. The default retrieval budget is **12,000 estimated tokens**, configurable with `forgepilot.contextBudget`. Counts are `ceil(UTF-8 bytes / 3)`, include serialized retrieval metadata, and reserve instruction/output space. Packages stay below 20,000 characters for the installed TrueForge tool-response limit. This is a per-retrieval budget, not exact provider tokenization or a cumulative conversation limit. The inspector reports actual cumulative TrueForge terminal metrics separately when supplied. Source is ranked using lexical hits, declarations, paths, imports and implementation/test/documentation counterparts. Truncation and omissions are visible. Inventory, symbol and legacy schemas are deferred; context, range reads, search and retained-draft schemas are eager. There is no extension-owned model loop.
+Live drivers default to **0 ms** response pacing; the recorded Task B recovery explicitly used 5,000 ms. The default retrieval budget is **12,000 estimated tokens**, configurable with `forgepilot.contextBudget`. Counts are `ceil(UTF-8 bytes / 3)`, include serialized retrieval metadata, and reserve instruction/output space. Packages stay below 20,000 characters for the installed TrueForge tool-response limit. This is a per-retrieval budget, not exact provider tokenization or a cumulative conversation limit. The inspector reports actual cumulative TrueForge terminal metrics separately when supplied. Source is ranked using lexical hits, declarations, paths, imports and implementation/test/documentation counterparts. Truncation and omissions are visible. Inventory, symbol and legacy schemas are deferred; context, range reads, search and retained-draft schemas are eager. There is no extension-owned model loop.
 
 Run one live verification at a time against a saved agent. Provider quotas can fail a run; failed completion invalidates the entire pending batch. Failed editor operations attempt guarded restoration of recognized applied portions and report any unsafe/partial state. `WorkspaceEdit` is not a filesystem transaction or a public version CAS. Do not edit the same files concurrently during application. See [architecture](docs/architecture.md), [Phase 2.1 hardening](docs/phase-2-hardening.md) and [Phase 3 verification](docs/phase-3-verification.md).
 
@@ -108,19 +117,7 @@ flowchart LR
     T -- SSE text deltas --> V
 ```
 
-`Bridge` registers a temporary connector with `client.settings.mcpServers.create`, verifies tool discovery through TrueForge, and attaches exactly the three tool names to the saved agent with `client.agents.update`. It then calls:
-
-```ts
-const { data: session } = await client.sessions.create({
-  agent: { name: 'forge-coder' },
-});
-const stream = await client.sessions.createTurnStream(session.id, {
-  input: [{ type: 'user.message', content: instruction }],
-});
-for await (const event of stream) {
-  if (event.type === 'model.message.delta') output.append(event.content ?? '');
-}
-```
+The editor registers a temporary connector with `client.settings.mcpServers.create`, verifies tool discovery through TrueForge, and snapshots the restricted saved agent into an isolated session using `client.sessions.create({ agent: { spec: ... } })`. Only the owned connector and its mode-specific tools are attached to that session; the saved agent is preserved. Turns use `client.sessions.createTurnStream(session.id, { input: [...] })`. Legacy standalone read-only/inline drivers temporarily attach to the saved agent, restore its attachment state on cleanup, and must run sequentially. See [architecture](docs/architecture.md) for approval correlation and session isolation.
 
 The SDK decodes wire fields into camelCase. `model.message.delta` carries streamed text; completed `model.message` records with `toolCalls`, and correlated `tool.response` records, are available from `client.sessions.listEvents`. A successful HTTP connection alone does not establish model or tool execution.
 
@@ -204,4 +201,10 @@ See [docs/phase-1-verification.md](docs/phase-1-verification.md) for the measure
 - [MCP TypeScript SDK](https://github.com/modelcontextprotocol/typescript-sdk/tree/v1.x) and [VS Code extension documentation](https://code.visualstudio.com/api/get-started/your-first-extension).
 - [VS Code 1.101 release notes](https://code.visualstudio.com/updates/v1_101): confirms the Node 22 extension runtime required by the declared minimum editor version.
 
+The packaged bundles include original license texts for their bundled dependencies in `dist/THIRD_PARTY_NOTICES.txt`. Flask evidence has its own BSD attribution; it is excluded from the VSIX.
+
 Starting point: **from scratch**, on repository commit `e77080b` (initial README, ignore file and MIT license). No editor project was forked, and the existing MIT [LICENSE](LICENSE) is preserved. Built with Codex assistance. Verified model execution ran through local TrueForge to Google's configured Gemini provider; TrueForge did not return cost estimates for these sessions, so no cost is asserted.
+
+## Current acceptance and manual handoff
+
+[Phase 5 verification](docs/phase-5-final-verification.md) separates current tests, retained genuine sessions and offline replay. The [Phase 6 handoff](docs/phase-6-handoff.md) lists the exact human walkthrough and official submission requirements; Phase 6 has not been executed. Linux is the verified platform. Windows/macOS, minimum-version VS Code, a dedicated agent panel and agent-run terminal commands are not demonstrated. Agent input currently uses native InputBox/Output/tree views. The verification terminal is developer-operated. Provider capacity is external and no remaining quota is promised.

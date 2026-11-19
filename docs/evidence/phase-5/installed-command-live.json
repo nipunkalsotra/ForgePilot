@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "exit": 0,
+  "sessionId": "01m7ssn7kgbf52g62xw19kdbac",
+  "assertion": "PASS: Extension \u2192 SDK \u2192 saved forge-coder \u2192 companion MCP \u2192 file \u2192 persisted history. Session 01m7ssn7kgbf52g62xw19kdbac",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "driver": "actual installed extension command handlers, programmatic; physical clicks NOT TESTED"
+}

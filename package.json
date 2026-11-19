@@ -313,7 +313,7 @@
     "build": "tsc --noEmit && node scripts/build.mjs",
     "watch": "node scripts/build.mjs --watch",
     "prepackage:extension": "node --input-type=module -e \"import {mkdir} from 'node:fs/promises'; await mkdir('artifacts',{recursive:true})\"",
-    "package:extension": "npx --yes @vscode/vsce@3.7.1 package --no-dependencies --out artifacts/forgepilot.vsix",
+    "package:extension": "npx --yes @vscode/vsce@3.7.1 package --no-dependencies --githubBranch feat/phase-3-autonomous-agent --out artifacts/forgepilot.vsix",
     "lint": "eslint . --max-warnings 0",
     "setup:agent": "node --import tsx scripts/setup-agent.ts",
     "pretest": "npm run build",

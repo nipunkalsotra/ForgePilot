@@ -1,6 +1,8 @@
 # Phase 3 final acceptance — 19 November 2026
 
-Starting commit: `29ae1dd`, branch `feat/phase-3-autonomous-agent`, initially clean. The user's later instruction prohibits commits and pushes; all recovery work remains uncommitted. PR #1 and Git history are untouched.
+**Current Git status (Phase 5, 19 November 2026):** The accepted Phase 3 changes were subsequently committed and pushed as `5dec056e5781af4d52c599c5befb7fa5a32be879` on `feat/phase-3-autonomous-agent`. Phase 5 independently confirmed that commit and open PR #1 targeting `main`. Current Phase 5 work remains uncommitted at the user's request; no commit or push is authorized for this work.
+
+**Historical execution baseline:** This acceptance run began clean at `29ae1dd`. At the time its report was written, recovery changes were uncommitted and no push had occurred. The later delivery at `5dec056e` supersedes that delivery state without changing the execution history below. Current archive/replay and remaining manual gates are in [Phase 5 verification](phase-5-final-verification.md).
 
 **Verdict: PHASE 3 PASS for the verified multi-turn recovery and executable acceptance.** This was not a single-turn autonomous pass: model-generated implementation errors and tests required review feedback and fresh approved corrections. All final changes were generated through TrueForge and applied through ForgePilot. No Flask implementation was manually repaired. Competition recording and a fresh single-pass rehearsal remain unverified.
 
@@ -105,7 +107,7 @@ docs/cli.rst      | 33 +++++++++++++++++++++++++++++++++
 
 Actual final patch: `artifacts/final-taskb-approved.patch`, SHA-256 **`e4b549bc955fb604c9f22169ae90dc0998fb8e55274f70cfafdfb483b919272e`**. It matched `git diff` at verification. The checkout was never reset, committed or manually patched. No unapproved tracked file changed.
 
-**Post-interruption handoff:** the temporary checkouts, venv and retained `/tmp` PDF are no longer present. The test outputs and original session/proposal artifacts remain in `artifacts/`. Exact baseline and accepted texts are archived under `artifacts/flask-taskb-approved/`, with session/proposal provenance and SHA-256 values in `manifest.json`. The six-batch content chain and saved unified diff were revalidated against those texts entirely in memory. This archive preserves the prior genuine result; it is not a new autonomous run or a newly applied benchmark solution. Recreate the pinned checkout/environment before rerunning commands. Do not feed the archived solution into a fresh autonomy test.
+**Historical post-interruption handoff:** the temporary checkouts, venv and retained `/tmp` PDF were no longer present at that handoff. The test outputs and original session/proposal artifacts remain in `artifacts/`. Exact baseline and accepted texts are archived under `artifacts/flask-taskb-approved/`, with session/proposal provenance and SHA-256 values in `manifest.json`. The six-batch content chain and saved unified diff were revalidated against those texts entirely in memory. This archive preserves the prior genuine result. Phase 5 subsequently validated its content chain, preserved a [durable repository evidence package](evidence/task-b/README.md), and independently replayed the exact patch on a new pinned checkout without inference. Do not feed the archived solution into a fresh autonomy test.
 
 Post-change command outputs, captured with exit code **0**:
 
@@ -185,7 +187,7 @@ Post-interruption process inspection found no remaining validation or companion 
 
 ## Exact ForgePilot files changed
 
-Relative to `29ae1dd`, **22 files**, all uncommitted:
+Historical change set relative to `29ae1dd`: **22 files**, subsequently included in `5dec056e`:
 
 - `README.md`
 - `config/forge-coder-gemini-high.agent.json`
@@ -224,4 +226,4 @@ Reproduce automated gates with `npm ci`, `npm run check`, both Node matrices, `n
 
 For manual Task B rehearsal, create a NEW clean pinned checkout. Explicitly import/select the high-reasoning example only after verifying the existing registered free-tier model and current capacity. Set the 600-second turn deadline, 12,000 context budget and provider-appropriate response pacing (5,000 ms was used here). Invoke Autonomous Agent, paste the exact official instruction without file names, inspect streamed tool/context evidence and the TrueForge session, permit staging, decide every native hunk, apply/save and run CLI tests/help/fixture JSON. Review actual errors and use a fresh normally approved correction if necessary; never insert a prepared patch. Physical click/recording checks still need a person.
 
-No second fresh full Task B request was made after success. Existing failure evidence, all previous phases, branch and PR #1 are preserved. **No commit, push, merge, rebase, publication or Phase 5 work occurred.** HEAD remains `29ae1dd` on `feat/phase-3-autonomous-agent`; the listed changes intentionally remain unstaged/uncommitted under the user's latest instruction.
+No second fresh full Task B request was made after that acceptance success. Existing failure evidence and the multi-turn execution timeline are preserved. The original run ended at `29ae1dd` with changes uncommitted; subsequent Git delivery produced `5dec056e`. Phase 5 began from that clean pushed commit, with PR #1 open and `main` unchanged. Its verification changes remain uncommitted under the user’s current instruction. No merge or extension publication is claimed.

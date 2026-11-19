@@ -1,8 +1,10 @@
 # Phase 3 verification
 
-**19 November final-acceptance update:** Official Task B executable acceptance now passes after genuine model-generated multi-turn corrections, fresh TrueForge staging and native hunk decisions. The original three-file request contained no filenames; source, tests and documentation were discovered independently. CLI tests: **59 passed**; CLI/help/masked JSON verified. See [final acceptance](phase-3-final-acceptance.md) for current evidence, regressions and limitations. Earlier FAIL/INCOMPLETE sections below are preserved historical recovery records, superseded for Task B by that report. No commit or push is authorized for this final recovery.
+**19 November final-acceptance update:** Official Task B executable acceptance now passes after genuine model-generated multi-turn corrections, fresh TrueForge staging and native hunk decisions. The original three-file request contained no filenames; source, tests and documentation were discovered independently. CLI tests: **59 passed**; CLI/help/masked JSON verified. See [final acceptance](phase-3-final-acceptance.md) for current evidence, regressions and limitations. Earlier FAIL/INCOMPLETE sections below are preserved historical recovery records, superseded for Task B by that report. The original recovery was later delivered in `5dec056e`; current Phase 5 work is uncommitted by request. See [Phase 5 verification](phase-5-final-verification.md) and the [durable Task B archive](evidence/task-b/README.md).
 
 Updated: **19 November 2026**, branch `feat/phase-3-autonomous-agent`. Recovery began from the user's clean checkpoint `e687e59`; Phase 2.1 remains committed as `458dd85`.
+
+> The sections below record the earlier recovery checkpoint; their pending/FAIL statements are historical, superseded by the final acceptance linked above.
 
 ## 1. Executive summary
 

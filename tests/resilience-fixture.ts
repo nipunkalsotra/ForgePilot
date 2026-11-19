@@ -1,4 +1,5 @@
 import { createServer, type ServerResponse } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -40,7 +41,7 @@ export async function resilienceFixture(primary: WireMode, secondary: WireMode =
     const sessionData = { id, agent: s.agent, metadata: {}, metrics: {}, source: null };
     if (pathname.endsWith('/cancel')) { s.res?.end(); return json({ data: {} }); }
     if (pathname === `/api/v1/sessions/${id}`) return json({ data: sessionData });
-    const send = (event: object) => s.res?.write(`data: ${JSON.stringify({ created_at: '', thread_id: 'main', id: crypto.randomUUID(), ...event })}\n\n`);
+    const send = (event: object) => s.res?.write(`data: ${JSON.stringify({ created_at: '', thread_id: 'main', id: randomUUID(), ...event })}\n\n`);
     const done = () => { send({ type: 'turn.done', state: { status: 'done', completed_at: '', output: null, required_actions: [] } }); s.res?.end(); };
     if (pathname.endsWith('/events')) {
       if (s.mode === 'denial-503') { res.writeHead(503, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: { message: 'fixture unavailable after rejection' } })); return; }
