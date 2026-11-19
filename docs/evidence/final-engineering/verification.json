@@ -83,7 +83,7 @@
     "startingIntegratedHead": "8716e3f7aa3ae05ca95216e5e3414e0b5f78cdb9",
     "startingRun": 44555981916,
     "startingResult": "success",
-    "deliveredHeadResult": "PENDING DELIVERY",
+    "deliveredHeadResult": "PASS: both Node 22/24 jobs, real Bubblewrap, all 140 tests and zero skips",
     "firstDelivery": {
       "commit": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
       "run": 44580215765,
@@ -92,6 +92,14 @@
       "node24Job": 135758520114,
       "realSandboxPrerequisites": "PASS",
       "skippedTests": 0
+    },
+    "finalCodeRun": {
+      "commit": "5dfbd0e1e49d220a81da5019882c3c4a1b5cfe93",
+      "run": 44582108260,
+      "result": "success",
+      "node22Job": 135765198769,
+      "node24Job": 135765198110,
+      "sourceCommit": "770328703f55ab20f05d7ce3e46d0ce6876332cc"
     }
   },
   "git": {
@@ -99,14 +107,16 @@
     "pr": 1,
     "prState": "open; unmerged",
     "main": "unchanged",
-    "delivery": "First delivery pushed; final compatibility fix and receipt delivery follows.",
+    "delivery": "Pushed to existing feature branch; final receipt-only commit records completed CI. No runtime/test changes after the verified code.",
     "implementationCommits": [
       "e14c5739548f60a447fe590e06d81e6021597311",
       "e8a5213a2e17c858ce9ea091de3295bcb1a75ac3",
       "770328703f55ab20f05d7ce3e46d0ce6876332cc"
     ],
     "firstDeliveryHead": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
-    "filesChanged": 53
+    "filesChanged": 53,
+    "verifiedDeliveryHead": "5dfbd0e1e49d220a81da5019882c3c4a1b5cfe93",
+    "workingTreeAtVerifiedDelivery": "clean"
   },
   "operatorSteps": [
     "Restore legitimate provider connectivity; rerun bounded fresh live gates before claiming repeat readiness or attempting Task B.",
