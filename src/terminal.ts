@@ -65,7 +65,22 @@ export async function planCommand(root: string, input: unknown, maxSeconds = 120
         await confined(directory, p, false);
       }
       executable = '/usr/bin/python3'; args = ['-B', '-m', 'pytest', '-q', '-p', 'no:cacheprovider', '--', ...request.testPaths!]; break;
-    case 'npm_test': executable = '/usr/bin/node'; args = ['/usr/lib/node_modules/npm/bin/npm-cli.js', '--offline', '--ignore-scripts', 'run', request.script!]; break;
+    case 'npm_test': {
+      // Resolve only known distro-managed npm CLI paths. Never accept an
+      // executable or arbitrary path from the model, PATH or workspace.
+      const candidates = ['/usr/lib/node_modules/npm/bin/npm-cli.js', '/usr/share/nodejs/npm/bin/npm-cli.js'];
+      let npmCli: string | undefined;
+      for (const candidate of candidates) {
+        try {
+          const file = await lstat(candidate);
+          if (file.isFile()) { npmCli = candidate; break; }
+        } catch { /* This system does not provide this packaged npm layout. */ }
+      }
+      if (!npmCli) throw new ForgePilotError('Supported system npm CLI is unavailable; command execution requires a supported Linux runtime.');
+      executable = '/usr/bin/node';
+      args = [npmCli, '--offline', '--ignore-scripts', 'run', request.script!];
+      break;
+    }
   }
   return { request, executable, args, directory, binding: `${rootInfo.dev}:${rootInfo.ino}/${directoryInfo.dev}:${directoryInfo.ino}`,
     summary: `${path.basename(executable)} ${args.join(' ')} (cwd: ${request.cwd}, timeout: ${request.timeoutSeconds}s)`,
