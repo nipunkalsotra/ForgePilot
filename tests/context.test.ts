@@ -93,3 +93,20 @@ test('workspace disposal kills an in-flight Git metadata subprocess', { skip: pr
     await rm(root, { recursive: true, force: true });
   }
 });
+test('structural outlines ground targeted range reads and bound metadata without bypassing path policy', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-outline-'));
+  try {
+    await writeFile(path.join(root, 'module.py'), Array.from({ length: 120 }, (_, i) => `def method_${i}():\n    return ${i}\n`).join(''));
+    await writeFile(path.join(root, 'guide.rst'), 'Usage\n=====\n\nCommands\n--------\n');
+    const engine = new ContextEngine(await Workspace.create(root));
+    const outline = await engine.outline('module.py');
+    assert.equal(outline.symbols.length, 100); assert.equal(outline.truncated, true);
+    assert.deepEqual(outline.symbols[10], { line: 21, name: 'method_10' });
+    const read = await engine.workspace.readRange('module.py', outline.symbols[10]!.line, 2);
+    assert.equal(read.hash, outline.baseHash); assert.match(read.content, /^def method_10/);
+    assert.deepEqual((await engine.outline('guide.rst')).symbols, [{ line: 1, name: 'Usage' }, { line: 4, name: 'Commands' }]);
+    await assert.rejects(engine.outline('../outside.py'));
+    await symlink('/etc/passwd', path.join(root, 'escape.py')); await assert.rejects(engine.outline('escape.py'));
+    await link(path.join(root, 'guide.rst'), path.join(root, 'hard.rst')); await assert.rejects(engine.outline('hard.rst'));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

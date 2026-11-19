@@ -105,7 +105,7 @@ test('autonomous MCP exposes secure retrieval and no-write multi-file proposal t
   const client = new Client({ name: 'autonomous-test', version: '1' });
   try {
     await client.connect(new StreamableHTTPClientTransport(new URL(server.url), { requestInit: { headers: { Authorization: `Bearer ${token}` } } }));
-    assert.equal((await client.listTools()).tools.length, 15);
+    assert.equal((await client.listTools()).tools.length, 17);
     for (const [name, args] of [['discover_files', { query: 'commands' }], ['lookup_symbol', { name: 'config_command' }], ['context_query', { query: 'config command' }], ['read_range', { path: 'commands.py', start: 1, count: 2 }]] as const) {
       const result = await client.callTool({ name, arguments: args }); assert.ok(!result.isError, JSON.stringify(result));
     }
@@ -123,6 +123,9 @@ test('autonomous MCP exposes secure retrieval and no-write multi-file proposal t
       const saved = JSON.parse((response.content as { type: string; text: string }[])[0]!.text) as { valid: boolean; draftId: string };
       assert.equal(saved.valid, true); draftIds.push(saved.draftId);
     }
+    const extended = await client.callTool({ name: 'extend_draft', arguments: { draftId: draftIds[0], edits: [{ oldText: 'config_command', newText: 'updated_command' }] } });
+    const extendedDraft = JSON.parse((extended.content as { text: string }[])[0]!.text) as { valid: boolean; draftId: string };
+    assert.equal(extendedDraft.valid, true); draftIds[0] = extendedDraft.draftId;
     const checked = await client.callTool({ name: 'check_drafts', arguments: { plan: draft.plan, draftIds } });
     assert.equal((JSON.parse((checked.content as { type: string; text: string }[])[0]!.text) as { valid: boolean }).valid, true);
     const listing = await client.callTool({ name: 'list_drafts', arguments: {} });

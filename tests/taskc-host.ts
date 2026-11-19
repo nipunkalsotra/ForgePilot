@@ -88,7 +88,8 @@ export async function taskCHost(api: { editing: Editing; readonly recovery: Reco
     await vscode.commands.executeCommand('forgepilot.stop');
     report.cleanup = JSON.stringify((await c.mcpServers.list()).data.map(s => s.name).sort()) === JSON.stringify(initialConnectors) ? 'PASS' : 'FAIL';
     report.finalGitStatus = await git('status', '--porcelain');
-    await writeFile(path.join(process.env.FORGEPILOT_ARTIFACTS!, process.env.FORGEPILOT_TASKC_UI_ONLY === '1' ? 'phase4-taskc-ui.json' : 'phase4-taskc.json'), JSON.stringify(report, null, 2));
+    const prefix = process.env.FORGEPILOT_TASKC_REPORT_PREFIX ?? 'phase4-taskc'; assert.match(prefix, /^[a-z0-9-]{1,80}$/);
+    await writeFile(path.join(process.env.FORGEPILOT_ARTIFACTS!, `${prefix}${process.env.FORGEPILOT_TASKC_UI_ONLY === '1' ? '-ui' : ''}.json`), JSON.stringify(report, null, 2));
     console.log(JSON.stringify({ result: report.result, scenarios, cleanup: report.cleanup, finalGitStatus: report.finalGitStatus }));
   }
 }

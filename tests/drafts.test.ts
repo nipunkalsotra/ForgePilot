@@ -85,3 +85,21 @@ test('runtime cancellation invalidates in-flight validation and cannot revive a 
     await assert.rejects(f.drafts.put(scope, f.file), /expired/);
   } finally { await f.close(); }
 });
+test('incremental drafts preserve prior edits; duplicate submissions need explicit replacement and current IDs', async () => {
+  const f = await fixture(); try {
+    const scope = randomUUID();
+    const first = await f.drafts.put(scope, f.file); assert.ok('draftId' in first);
+    const ambiguous = await f.drafts.put(scope, { ...f.file, edits: [{ oldText: 'beta', newText: 'BETA' }] });
+    assert.equal(ambiguous.code, 'DRAFT_EXISTS'); assert.equal(f.drafts.list().drafts[0]!.draftId, first.draftId);
+    const next = await f.drafts.extend(scope, first.draftId, [{ oldText: 'beta', newText: 'BETA' }]); assert.ok('draftId' in next && typeof next.draftId === 'string');
+    const patch = f.drafts.assemble(scope, 'Combined', [next.draftId]);
+    assert.equal(patch.files.length, 1); assert.equal(patch.files[0]!.operation, 'modify');
+    assert.deepEqual('edits' in patch.files[0]! && patch.files[0]!.edits, [...f.file.edits, { oldText: 'beta', newText: 'BETA' }]);
+    assert.equal((await f.drafts.extend(scope, first.draftId, [{ oldText: 'beta', newText: 'x' }])).code, 'STALE_DRAFT');
+    const replacement = await f.drafts.put(scope, f.file, next.draftId); assert.ok('draftId' in replacement);
+    assert.equal(f.drafts.list().drafts[0]!.edits, 1); assert.equal(f.drafts.list().drafts[0]!.baseHash, f.file.baseHash);
+    const overlap = await f.drafts.extend(scope, replacement.draftId, [{ oldText: 'alpha\n', newText: 'x' }]);
+    assert.equal(overlap.code, 'OVERLAPPING_EDITS'); assert.equal(f.drafts.list().drafts.length, 0);
+    assert.equal(await readFile(path.join(f.root, f.file.path), 'utf8'), f.content);
+  } finally { await f.close(); }
+});

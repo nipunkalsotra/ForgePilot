@@ -11,12 +11,15 @@ import { PatchStore, hash } from '../src/patch';
 import { Workspace } from '../src/workspace';
 
 /** Explicit SDK wire fixture. Live model evidence comes from verify-editing-live.ts. */
-async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'after-error' | 'incomplete' | 'missing-terminal' | 'late-terminal' | 'approval-error' | 'output-error' | 'question-only' | 'wrong-source-cache' | 'truncated-output' | 'changed-proposal', autonomous = false, retained = false) {
+async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'after-error' | 'incomplete' | 'missing-terminal' | 'late-terminal' | 'approval-error' | 'output-error' | 'question-only' | 'wrong-source-cache' | 'truncated-output' | 'changed-proposal', autonomous = false, retained = false, extended = false) {
   const root = await mkdtemp(path.join(tmpdir(), 'forgepilot-approval-'));
   const content = 'const value = 1;\n';
   await writeFile(path.join(root, 'file.ts'), content);
   const patch = { path: 'file.ts', baseHash: hash(content), edits: [{ oldText: '1', newText: '2' }] };
   const batchPatch = { plan: 'Update discovered code', files: [{ operation: 'modify', ...patch }] };
+  const initialFile = structuredClone(batchPatch.files[0]!);
+  const extraEdits = [{ oldText: 'const value', newText: 'let value' }];
+  if (extended) batchPatch.files[0]!.edits.push(...extraEdits);
   const manifest: Record<string, unknown> = { model: { name: 'fixture/model' }, config: { sandbox: { enabled: false }, dynamic_sub_agents: { enabled: false }, web_search: { enabled: false }, memory: { enabled: false }, generative_ui: { enabled: false } } };
   const agent = { id: 'agent', name: 'forge-coder', manifest };
   const requests: { path: string; body: Record<string, unknown> }[] = [];
@@ -62,8 +65,13 @@ async function fixture(mode: 'valid' | 'malformed' | 'error' | 'delayed' | 'afte
       held = res; res.writeHead(200, { 'Content-Type': 'text/event-stream' });
       requestId = JSON.stringify(body).match(/requestId=([a-f0-9-]{36})/)?.[1] ?? '';
       if (retained) {
-        send({ type: 'model.message', id: 'draft-source', tool_calls: [{ id: 'draft', type: 'function', function: { name: 'draft_file', arguments: JSON.stringify({ requestId, ...batchPatch.files[0] }) }, tool_info: { type: 'mcp', name: 'draft_file', server_id: connector, server_name: connector } }] });
-        send({ type: 'tool.response', tool_call_id: 'draft', content: JSON.stringify({ kind: 'forgepilot.draft', valid: true, requestId, draftId, path: 'file.ts' }) });
+        const initialId = extended ? crypto.randomUUID() : draftId;
+        send({ type: 'model.message', id: 'draft-source', tool_calls: [{ id: 'draft', type: 'function', function: { name: 'draft_file', arguments: JSON.stringify({ requestId, ...initialFile }) }, tool_info: { type: 'mcp', name: 'draft_file', server_id: connector, server_name: connector } }] });
+        send({ type: 'tool.response', tool_call_id: 'draft', content: JSON.stringify({ kind: 'forgepilot.draft', valid: true, requestId, draftId: initialId, path: 'file.ts' }) });
+        if (extended) {
+          send({ type: 'model.message', id: 'extend-source', tool_calls: [{ id: 'extend', type: 'function', function: { name: 'extend_draft', arguments: JSON.stringify({ draftId: initialId, edits: extraEdits }) }, tool_info: { type: 'mcp', name: 'extend_draft', server_id: connector, server_name: connector } }] });
+          send({ type: 'tool.response', tool_call_id: 'extend', content: JSON.stringify({ kind: 'forgepilot.draft', valid: true, requestId, draftId, path: 'file.ts' }) });
+        }
       }
       send({ type: 'turn.created', turn_id: 'turn', previous_turn_id: null, state: { status: 'running' } });
       if (mode === 'output-error') send({ type: 'model.message.delta', content: 'apparently successful response' });
@@ -92,6 +100,19 @@ test('SDK approval: exact persisted source, genuine approval input then staging;
     assert.equal(approved, true); assert.equal(f.executed(), true); assert.equal(f.store.current!.status, 'staged');
     assert.equal(f.store.current!.hunks[0]!.decision, 'pending'); await f.unchanged();
     assert.ok(f.requests.some(r => r.path.endsWith('/events') && Array.isArray(r.body.events)));
+  } finally { await f.close(); }
+});
+test('SDK retained draft extension correlates combined original edits with fresh final staging permission', async () => {
+  const f = await fixture('valid', true, true, true); try {
+    await f.bridge.start(); let approvals = 0;
+    await f.bridge.autonomous(f.batchStore, 'Update the discovered code', () => {}, async batch => {
+      approvals++; assert.equal(batch.files.length, 1);
+      assert.equal(batch.files[0]!.operation, 'modify');
+      assert.equal('edits' in batch.files[0]! && batch.files[0]!.edits.length, 2);
+      await f.unchanged(); return true;
+    });
+    assert.equal(approvals, 1); assert.equal(f.batchStore.current!.files[0]!.proposed, 'let value = 2;\n');
+    assert.ok(f.batchStore.current!.generationSucceeded); await f.unchanged();
   } finally { await f.close(); }
 });
 test('retained draft SDK protocol requires exact approval, terminal success and an unchanged final payload', async () => {

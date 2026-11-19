@@ -56,7 +56,9 @@ try {
   for (const name of createdProviders.reverse()) try { await c.settings.modelProviders.delete(name); } catch { cleanup.push('disposable provider cleanup failed'); }
   for (const [id, before] of originals) if (hash(JSON.stringify((await c.agents.get(id)).data.manifest)) !== before) cleanup.push('saved production agent changed');
   summary.cleanup = cleanup.length ? cleanup : 'PASS'; if (cleanup.length) process.exitCode = 1;
-  await mkdir('artifacts', { recursive: true }); await writeFile('artifacts/phase4-taskc-setup.json', JSON.stringify(summary, null, 2));
-  await writeFile(`artifacts/phase4-taskc-setup-${suffix}.json`, JSON.stringify(summary, null, 2));
+  const prefix = process.env.FORGEPILOT_TASKC_REPORT_PREFIX ?? 'phase4-taskc';
+  assert.match(prefix, /^[a-z0-9-]{1,80}$/);
+  await mkdir('artifacts', { recursive: true }); await writeFile(`artifacts/${prefix}-setup.json`, JSON.stringify(summary, null, 2));
+  await writeFile(`artifacts/${prefix}-setup-${suffix}.json`, JSON.stringify(summary, null, 2));
   console.log(JSON.stringify(summary));
 }

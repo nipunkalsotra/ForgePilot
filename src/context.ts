@@ -1,5 +1,6 @@
 import { Workspace } from './workspace';
 import { ForgePilotError } from './log';
+import { hash } from './patch';
 
 export const estimatedTokens = (text: string): number => Math.ceil(Buffer.byteLength(text, 'utf8') / 3);
 const stop = new Set('a an the add new built in to of and or is as be by for that it with from should must this all well include update implement'.split(' '));
@@ -13,6 +14,19 @@ const declarations = /(?:^|\s)(?:export\s+)?(?:async\s+)?(?:def|class|function|i
 export class ContextEngine {
   constructor(readonly workspace: Workspace, readonly budget = 12000) {
     if (!Number.isSafeInteger(budget) || budget < 2000 || budget > 32000) throw new ForgePilotError('Context budget must be 2,000–32,000 estimated tokens.');
+  }
+  async outline(path: string) {
+    const file = await this.workspace.readFile(path, 1024 * 1024), lines = file.content.split('\n');
+    const symbols: { line: number; name: string }[] = [];
+    let truncated = false;
+    for (const [i, text] of lines.entries()) {
+      const name = declarations.exec(text)?.[1];
+      const heading = i > 0 && /^[=~^#*+-]{3,}$/.test(text.trim()) && lines[i - 1]!.trim() ? lines[i - 1]!.trim() : undefined;
+      if (!name && !heading) continue;
+      if (symbols.length >= 100) { truncated = true; break; }
+      symbols.push({ line: name ? i + 1 : i, name: (name ?? heading!).slice(0, 120) });
+    }
+    return { path, baseHash: hash(file.content), totalLines: lines.length, symbols, truncated, methodology: 'Heuristic declarations and underlined headings, not a parser. Read targeted ranges around relevant locations; do not read a long file sequentially.' };
   }
   async discover(query = '', scope = '.', cursor = 0, limit = 100) {
     if (query.length > 200 || !Number.isSafeInteger(cursor) || cursor < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 200) throw new ForgePilotError('Invalid discovery query or page.');

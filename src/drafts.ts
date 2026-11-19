@@ -17,6 +17,8 @@ const guidance: Record<string, string> = {
   INVALID_OPERATION: 'Specify operation=modify with path/baseHash/edits, or operation=create with path/content.',
   SCHEMA_INVALID: 'Use only the required variant fields, a 64-character lowercase SHA-256 and 1–64 nonempty oldText replacements; keep text and batch within limits.',
   WORKSPACE_FORBIDDEN: 'Choose a permitted workspace-relative UTF-8 single-link regular file. Hidden, sensitive and linked paths remain forbidden.',
+  DRAFT_EXISTS: 'This path already has a retained draft. Use extend_draft with its current ID for additional disjoint edits. To replace the entire draft intentionally, pass replaceDraftId to draft_file with ALL file edits. Recover IDs with list_drafts.',
+  STALE_DRAFT: 'Recover current IDs with list_drafts. Use only an ID returned in this request; never invent IDs or reuse superseded IDs.',
 };
 function diagnostic(error: unknown, path?: string): DraftDiagnostic {
   const code = error instanceof PatchValidationError || error instanceof WorkspaceError ? error.code : 'SCHEMA_INVALID';
@@ -53,7 +55,7 @@ export class DraftStore {
   constructor(private readonly workspace: Workspace) {}
   begin(requestId: string): void { this.scope(requestId); }
   requestId(): string { if (this.closed || !this.active) throw new ForgePilotError('No active draft request.'); return this.active; }
-  list() { this.requestId(); return { kind: 'forgepilot.drafts', drafts: [...this.files.values()].map(v => ({ draftId: v.id, path: v.file.path, operation: v.file.operation })), validation: 'Last validated when retained; use check_drafts before staging.' }; }
+  list() { this.requestId(); return { kind: 'forgepilot.drafts', drafts: [...this.files.values()].map(v => ({ draftId: v.id, path: v.file.path, operation: v.file.operation, ...(v.file.operation === 'modify' ? { baseHash: v.file.baseHash, edits: v.file.edits.length } : {}) })), validation: 'Last validated when retained; use check_drafts before staging. extend_draft adds disjoint edits; draft_file with replaceDraftId replaces ALL edits. Final propose_drafts needs every requested file ID.' }; }
   invalidate(): void { if (this.active) this.retired.add(this.active); this.active = undefined; this.files.clear(); }
   close(): void { this.closed = true; this.files.clear(); this.active = undefined; this.retired.clear(); }
   private scope(requestId: string): void {
@@ -63,11 +65,14 @@ export class DraftStore {
     if (this.active) this.retired.add(this.active);
     this.active = requestId; this.files.clear();
   }
-  async put(requestId: string, value: unknown) {
+  async put(requestId: string, value: unknown, replaceDraftId?: string) {
     this.scope(requestId);
     const result = await checkFile(this.workspace, value);
     if (this.closed || this.active !== requestId) throw new ForgePilotError('Delayed draft ignored.');
     const key = result.path?.toLowerCase();
+    const previous = key ? this.files.get(key) : undefined;
+    if (replaceDraftId && previous?.id !== replaceDraftId) return { kind: 'forgepilot.draft', requestId, path: result.path, valid: false, code: 'STALE_DRAFT', guidance: guidance.STALE_DRAFT, retainedDraftId: previous?.id };
+    if (result.valid && previous && !replaceDraftId) return { kind: 'forgepilot.draft', requestId, path: result.path, valid: false, code: 'DRAFT_EXISTS', guidance: guidance.DRAFT_EXISTS, retainedDraftId: previous.id };
     // A failed replacement cannot leave an older file draft available for final staging.
     if (key) this.files.delete(key);
     if (!result.valid) return { kind: 'forgepilot.draft', requestId, ...result };
@@ -77,6 +82,13 @@ export class DraftStore {
     catch { return { kind: 'forgepilot.draft', requestId, ...diagnostic(undefined, result.path) }; }
     const id = randomUUID(); this.files.set(key!, { id, file });
     return { kind: 'forgepilot.draft', requestId, ...result, draftId: id, retainedFiles: this.files.size, approval: 'none: validation only' };
+  }
+  async extend(requestId: string, draftId: string, edits: unknown[]) {
+    this.scope(requestId);
+    const previous = [...this.files.values()].find(v => v.id === draftId);
+    if (!previous) return { kind: 'forgepilot.draft', requestId, valid: false, code: 'STALE_DRAFT', guidance: guidance.STALE_DRAFT };
+    if (previous.file.operation !== 'modify') return { kind: 'forgepilot.draft', requestId, path: previous.file.path, valid: false, code: 'INVALID_OPERATION', guidance: 'Only modify drafts can be extended. To revise a new file, use draft_file with replaceDraftId and complete content.', retainedDraftId: previous.id };
+    return this.put(requestId, { ...previous.file, edits: [...previous.file.edits, ...edits] }, draftId);
   }
   assemble(requestId: string, plan: string, ids: string[]): BatchPatch {
     this.scope(requestId);

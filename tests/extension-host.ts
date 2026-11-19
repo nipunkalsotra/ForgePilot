@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { resilienceHostTests } from './resilience-host';
 import { batchHostTests } from './batch-host';
 import { taskCHost } from './taskc-host';
@@ -18,6 +19,10 @@ export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension('nipunkalsotra.forgepilot');
   assert.ok(extension, 'ForgePilot must be discovered by VS Code');
   assert.equal(extension.extensionPath, process.env.FORGEPILOT_EXPECTED_EXTENSION_PATH);
+  const expected = JSON.parse(process.env.FORGEPILOT_EXPECTED_BUNDLES!) as Record<string, string>;
+  for (const name of ['extension.cjs', 'mcp-child.cjs']) assert.equal(
+    createHash('sha256').update(await readFile(path.join(extension.extensionPath, 'dist', name))).digest('hex'), expected[name],
+    `Loaded ${name} differs from the current build. Install the VSIX using the code CLI wrapper, then reload.`);
   const manifest = extension.packageJSON as { main: string; contributes: { commands: { command: string; title: string }[] } };
   assert.match(await readFile(path.join(extension.extensionPath, manifest.main), 'utf8'), /forgepilot\.autonomous/);
   const contributed = manifest.contributes.commands;

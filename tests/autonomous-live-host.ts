@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { TrueForge } from '@truefoundry/trueforge-sdk';
 import type { Autonomous } from '../src/autonomous';
+import type { RecoveryTrace } from '../src/resilience';
 
 /** Genuine model smoke test, kept separate from deterministic editor fixtures. */
 export async function autonomousLiveHost(agent: Autonomous): Promise<void> {
@@ -18,15 +19,16 @@ export async function autonomousLiveHost(agent: Autonomous): Promise<void> {
   for (const [name, content] of sources) await writeFile(path.join(root, name), content);
   const client = new TrueForge({ baseUrl: 'http://localhost:8790', maxRetries: 0 });
   const old = new Set((await client.sessions.list()).data.map(s => s.id));
-  const connectors = (await client.mcpServers.list()).data.map(s => s.name).sort();
   await vscode.workspace.getConfiguration('forgepilot').update('turnTimeoutSeconds', 300, vscode.ConfigurationTarget.Global);
   await vscode.workspace.getConfiguration('forgepilot').update('autonomousToolIntervalMs', 0, vscode.ConfigurationTarget.Global);
   const instruction = 'Make the switch helper recognize the affirmative string regardless of letter case while preserving false results for other strings. Update the existing automated tests with mixed-case coverage and update the existing usage documentation. Discover the files yourself and deliver the complete three-file change together.';
   const evidence: Record<string, unknown> = { timestamp: new Date().toISOString(), instruction, approvalDriver: 'explicit automated decisions in actual VS Code; human clicks not tested', toolIntervalMs: 0 };
+  const hunkDecisions: unknown[] = []; evidence.hunkDecisions = hunkDecisions;
   try {
     let approvals = 0;
     await agent.run(instruction, async batch => {
       approvals++; assert.equal(batch.files.length, 3);
+      evidence.stagingDecision = { at: new Date().toISOString(), decision: 'allow staging', paths: batch.files.map(f => f.path) };
       for (const [name, content] of sources) assert.equal(await readFile(path.join(root, name), 'utf8'), content);
       return true;
     }, async q => q.options[0] ?? 'Proceed with the requested task.');
@@ -38,7 +40,10 @@ export async function autonomousLiveHost(agent: Autonomous): Promise<void> {
       const tab = vscode.window.tabGroups.activeTabGroup.activeTab; assert.ok(tab?.input instanceof vscode.TabInputTextDiff);
       assert.equal((await vscode.workspace.openTextDocument(tab.input.original)).getText(), sources.get(file.path));
       assert.equal((await vscode.workspace.openTextDocument(tab.input.modified)).getText(), file.proposed);
-      for (const hunk of file.hunks) await vscode.commands.executeCommand('forgepilot.batchAccept', { fileId: file.id, hunkId: hunk.id });
+      for (const hunk of file.hunks) {
+        await vscode.commands.executeCommand('forgepilot.batchAccept', { fileId: file.id, hunkId: hunk.id });
+        hunkDecisions.push({ path: file.path, hunkId: hunk.id, decision: 'accepted' });
+      }
     }
     await agent.apply();
     for (const file of proposal.files) await (await vscode.workspace.openTextDocument(vscode.Uri.file(path.join(root, file.path)))).save();
@@ -55,15 +60,19 @@ export async function autonomousLiveHost(agent: Autonomous): Promise<void> {
   } catch (error) { evidence.result = 'FAIL'; evidence.error = error instanceof Error ? error.message : String(error); throw error; }
   finally {
     evidence.retrieval = agent.evidence;
-    const sessions = (await client.sessions.list()).data.filter(s => !old.has(s.id) && s.metadata.client === 'ForgePilot');
+    const traces = (vscode.extensions.getExtension('nipunkalsotra.forgepilot')!.exports as { readonly recovery: RecoveryTrace[] }).recovery;
+    evidence.recovery = traces;
+    const owned = new Set(traces.map(t => t.sessionId));
+    const sessions = (await client.sessions.list()).data.filter(s => owned.has(s.id) && !old.has(s.id));
     evidence.sessions = sessions.map(s => s.id);
     const events = [];
     for (const s of sessions) for await (const { event } of await client.sessions.listEvents(s.id)) events.push(event);
     evidence.events = events;
     await vscode.commands.executeCommand('forgepilot.stop');
-    assert.deepEqual((await client.mcpServers.list()).data.map(s => s.name).sort(), connectors);
+    const remaining = (await client.mcpServers.list()).data.map(s => s.name);
+    assert.ok(traces.every(t => !t.connector || !remaining.includes(t.connector)), 'Every owned connector must be removed; unrelated sessions may independently close their own connectors');
     evidence.cleanup = 'PASS';
-    await writeFile(path.join(process.env.FORGEPILOT_ARTIFACTS!, 'openrouter-three-file.json'), JSON.stringify(evidence, null, 2));
+    await writeFile(path.join(process.env.FORGEPILOT_ARTIFACTS!, process.env.FORGEPILOT_EVIDENCE_NAME ?? 'openrouter-three-file.json'), JSON.stringify(evidence, null, 2));
     console.log(`Generic live three-file ${evidence.result}; sessions ${JSON.stringify(evidence.sessions)}`);
   }
 }
