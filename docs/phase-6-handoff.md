@@ -134,7 +134,7 @@ Confirm registration and team details; perform/record the walkthrough; produce
 the actual PDF and scorecard; verify all public links signed out; submit all three
 links in the portal before the deadline. Current engineering delivery is recorded in [final acceptance](final-engineering-acceptance.md);
 operator-controlled repository visibility and signed-out link checks remain.
- PR #1 must stay open and `main`
-must remain unchanged. The new local documentation links will not work remotely
-until that authorized delivery. Marketplace publication is out of official scope.
-No further repository investigation should be needed before these operator steps.
+PR #1 must stay open and `main` must remain unchanged. Engineering documents
+are delivered on the feature branch. Marketplace publication is out of scope.
+Restore legitimate provider connectivity and pass the documented live gates
+before recording; physical deliverables remain separate from engineering evidence.

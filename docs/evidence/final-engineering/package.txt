@@ -37,4 +37,4 @@ forgepilot.vsix
       ├─ agent.js [6.32 KB]
       └─ forgepilot.svg [0.21 KB]
 
- DONE  Packaged: artifacts/forgepilot.vsix (15 files, 507.66 KB)
+ DONE  Packaged: artifacts/forgepilot.vsix (15 files, 507.74 KB)

@@ -1,5 +1,5 @@
 {
-  "vsixSha256": "282551b425ab32b22b5c021157d41dbaf3a5f4e8ad68347df63d4825944eddc7",
+  "vsixSha256": "0e9e460c905c8b4d2851e4bf407caea69ea66750f710402aaaf849e9b82128a9",
   "files": {
     "dist/extension.cjs": {
       "built": "f76b16a48172ac3a415e2f4c3b0592f4843cf761908cc3bb598fe6ae4f1de3e5",
@@ -8,9 +8,9 @@
       "match": true
     },
     "dist/mcp-child.cjs": {
-      "built": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
-      "packaged": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
-      "installed": "1651300f3de8c35b6a6ac1380d86393442d7042ad184db223f0e74e6659bb95e",
+      "built": "3c6ed4cdb349e50ab8ad455e4e7c4cde4cc05ed00d64dceedd67a286644611a4",
+      "packaged": "3c6ed4cdb349e50ab8ad455e4e7c4cde4cc05ed00d64dceedd67a286644611a4",
+      "installed": "3c6ed4cdb349e50ab8ad455e4e7c4cde4cc05ed00d64dceedd67a286644611a4",
       "match": true
     },
     "media/agent.js": {
@@ -48,13 +48,13 @@
     "extension/media/forgepilot.svg",
     "extension/media/agent.js",
     "extension/media/agent.css",
+    "extension/dist/mcp-child.cjs",
+    "extension/dist/extension.cjs",
+    "extension/dist/THIRD_PARTY_NOTICES.txt",
     "extension/config/trueforge.env.example",
     "extension/config/forge-coder.agent.json",
     "extension/config/forge-coder-openrouter.agent.json",
-    "extension/config/forge-coder-gemini-high.agent.json",
-    "extension/dist/mcp-child.cjs",
-    "extension/dist/extension.cjs",
-    "extension/dist/THIRD_PARTY_NOTICES.txt"
+    "extension/config/forge-coder-gemini-high.agent.json"
   ],
   "manifestContributionsMatch": true,
   "commands": 26,

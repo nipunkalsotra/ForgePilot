@@ -40,7 +40,7 @@
     "timeoutDescendantsCleanup": "PASS",
     "candidateExecution": "UNSUPPORTED"
   },
-  "vsixSha256": "282551b425ab32b22b5c021157d41dbaf3a5f4e8ad68347df63d4825944eddc7",
+  "vsixSha256": "0e9e460c905c8b4d2851e4bf407caea69ea66750f710402aaaf849e9b82128a9",
   "builtPackagedInstalled": "PASS: six files plus manifest contributions match",
   "audit": {
     "knownVulnerabilities": 0,
@@ -83,18 +83,30 @@
     "startingIntegratedHead": "8716e3f7aa3ae05ca95216e5e3414e0b5f78cdb9",
     "startingRun": 44555981916,
     "startingResult": "success",
-    "deliveredHeadResult": "PENDING DELIVERY"
+    "deliveredHeadResult": "PENDING DELIVERY",
+    "firstDelivery": {
+      "commit": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
+      "run": 44580215765,
+      "result": "success",
+      "node22Job": 135758519265,
+      "node24Job": 135758520114,
+      "realSandboxPrerequisites": "PASS",
+      "skippedTests": 0
+    }
   },
   "git": {
     "branch": "feat/phase-3-autonomous-agent",
     "pr": 1,
     "prState": "open; unmerged",
     "main": "unchanged",
-    "delivery": "Implementation committed; documentation delivery follows on same branch.",
+    "delivery": "First delivery pushed; final compatibility fix and receipt delivery follows.",
     "implementationCommits": [
       "e14c5739548f60a447fe590e06d81e6021597311",
-      "e8a5213a2e17c858ce9ea091de3295bcb1a75ac3"
-    ]
+      "e8a5213a2e17c858ce9ea091de3295bcb1a75ac3",
+      "770328703f55ab20f05d7ce3e46d0ce6876332cc"
+    ],
+    "firstDeliveryHead": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
+    "filesChanged": 53
   },
   "operatorSteps": [
     "Restore legitimate provider connectivity; rerun bounded fresh live gates before claiming repeat readiness or attempting Task B.",
@@ -114,12 +126,13 @@
     "router installation or connection"
   ],
   "cleanSource": {
-    "commit": "e8a5213a2e17c858ce9ea091de3295bcb1a75ac3",
-    "method": "fresh git archive, npm ci, Node 24 npm run check",
+    "commit": "770328703f55ab20f05d7ce3e46d0ce6876332cc",
+    "method": "fresh git archive, explicitly versioned Node 24 npm ci and npm run check",
     "pass": 140,
     "fail": 0,
     "skipped": 0,
     "bundleAndMediaHashesMatch": true,
-    "earlierGate": "e14c573 archive had 139/140 because renderer assets were not staged; fixed in e8a5213, full clean gate repeated."
+    "earlierGate": "e14c573 archive had 139/140 because renderer assets were not staged; fixed in e8a5213, full clean gate repeated.",
+    "version": "24.22.3"
   }
 }

@@ -145,8 +145,10 @@ only evidence of execution. Model prose is never permission or a test result.
 
 Existing exact hashes/anchors, overlapping edits, variant fields, duplicate paths,
 retained IDs and final-batch correlation are preserved. JSON and CommonJS drafts
-also receive parse-only syntax checks using JSON parsing and `vm.Script`, without
-executing modules or resolving imports. Other-language syntax, dependencies and
+also receive parse-only syntax checks using strict JSON parsing and `vm.Script` with Node’s CommonJS wrapper, without
+executing modules or resolving imports. Known `tsconfig`/`jsconfig` JSONC filenames skip strict JSON parsing; no JSONC
+syntax guarantee is claimed. Shebangs and valid CommonJS top-level returns are
+covered against Node’s actual syntax checker. Other-language syntax, dependencies and
 behavior remain unverified until real tests run. Diagnostics are concise and
 correctable; static validity never promises behavioral correctness.
 
@@ -278,7 +280,7 @@ Patch SHA-256 remains `e4b549bc955fb604c9f22169ae90dc0998fb8e55274f70cfafdfb483b
 
 Package/source/installed bundle and media hashes, 26/26 command registrations,
 view contribution and third-party notices are checked in the current package and
-native host evidence. Final VSIX SHA-256: `282551b425ab32b22b5c021157d41dbaf3a5f4e8ad68347df63d4825944eddc7`.
+native host evidence. Final VSIX SHA-256: `0e9e460c905c8b4d2851e4bf407caea69ea66750f710402aaaf849e9b82128a9`.
 Installation uses `/opt/visual-studio-code/bin/code`, not
 the raw Electron executable used to launch test hosts. An old installed extension
 cannot satisfy the current bundle/media identity assertions. A normal-window
@@ -290,7 +292,7 @@ Supported Node runtimes pass the same strict commands and real Bubblewrap tests;
 there are no Linux sandbox skips. System executable layout is Arch/Ubuntu aware;
 Windows/macOS command execution remains unsupported. Clean-source archive
 verification, dependency audit, license notices and credential/link checks are
-recorded in the final evidence. No new runtime dependency was added. A fresh archive of `e8a5213` passed Node 24
+recorded in the final evidence. No new runtime dependency was added. A fresh archive of `7703287` passed explicitly versioned Node 24
 `npm ci` and all 140 checks/tests, with identical runtime bundle/media/notice bytes.
 The first archive exposed omitted renderer assets (139/140); they were committed
 and the complete clean gate repeated successfully.
@@ -337,12 +339,15 @@ broader kernel/process/mount/unknown-secret limitations.
 
 All changes stay on the existing feature branch. Main, historical Task B evidence,
 provider credentials, account settings and saved-agent manifests remain unchanged.
-Implementation commits are `e14c573` and `e8a5213`; the latter includes the
+Implementation commits are `e14c573`, `e8a5213`, and `7703287` (CommonJS/JSONC
+compatibility); `e8a5213` includes the
 renderer assets caught by clean-source verification. Documentation and
 existing-branch delivery are recorded in final evidence;
 PR #1 stays open. No repository visibility or extension publication action is
-performed. Final CI must be read from the delivered commit, not inferred from the
-starting green run.
+performed. The first delivery at `53b16b7` passed both GitHub Actions jobs in
+[run 44580215765](https://github.com/nipunkalsotra/ForgePilot/actions/runs/44580215765).
+The final compatibility/receipt delivery is independently checked; its result is
+recorded in verification evidence and the delivery response.
 
 ## 23. Final engineering gate
 

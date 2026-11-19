@@ -1,3 +1,4 @@
+v24.22.3
 
 > forgepilot@0.1.0 check
 > npm run build && npm run lint && npm test
@@ -22,853 +23,151 @@
 > forgepilot@0.1.0 test
 > node --import tsx --test --test-timeout=15000 tests/*.test.ts
 
-TAP version 13
-# Subtest: SDK approval: exact persisted source, genuine approval input then staging; hunk review is separate
-ok 1 - SDK approval: exact persisted source, genuine approval input then staging; hunk review is separate
-  ---
-  duration_ms: 585.14248
-  type: 'test'
-  ...
-# Subtest: SDK retained draft extension correlates combined original edits with fresh final staging permission
-ok 2 - SDK retained draft extension correlates combined original edits with fresh final staging permission
-  ---
-  duration_ms: 367.106163
-  type: 'test'
-  ...
-# Subtest: retained draft SDK protocol requires exact approval, terminal success and an unchanged final payload
-ok 3 - retained draft SDK protocol requires exact approval, terminal success and an unchanged final payload
-  ---
-  duration_ms: 1325.551514
-  type: 'test'
-  ...
-# Subtest: cancellation during draft IPC setup prevents inference and rejects overlapping turns
-ok 4 - cancellation during draft IPC setup prevents inference and rejects overlapping turns
-  ---
-  duration_ms: 329.023067
-  type: 'test'
-  ...
-# Subtest: SDK approval: rejection submits deny and never executes tool or stages
-ok 5 - SDK approval: rejection submits deny and never executes tool or stages
-  ---
-  duration_ms: 297.965823
-  type: 'test'
-  ...
-# Subtest: SDK approval: malformed model tool arguments and model errors preserve original
-ok 6 - SDK approval: malformed model tool arguments and model errors preserve original
-  ---
-  duration_ms: 544.902056
-  type: 'test'
-  ...
-# Subtest: SDK approval: cancel waiting for human approval ignores delayed human answer
-ok 7 - SDK approval: cancel waiting for human approval ignores delayed human answer
-  ---
-  duration_ms: 204.229326
-  type: 'test'
-  ...
-# Subtest: SDK approval: cancel after allow ignores delayed tool result
-ok 8 - SDK approval: cancel after allow ignores delayed tool result
-  ---
-  duration_ms: 181.660076
-  type: 'test'
-  ...
-# Subtest: unsuccessful completion after staged patch always invalidates proposal
-ok 9 - unsuccessful completion after staged patch always invalidates proposal
-  ---
-  duration_ms: 920.804619
-  type: 'test'
-  ...
-# Subtest: failure during approval or after model output cannot become a proposal
-ok 10 - failure during approval or after model output cannot become a proposal
-  ---
-  duration_ms: 379.755559
-  type: 'test'
-  ...
-# Subtest: autonomous SDK contract correlates deferred batch approval and terminal success
-ok 11 - autonomous SDK contract correlates deferred batch approval and terminal success
-  ---
-  duration_ms: 197.742247
-  type: 'test'
-  ...
-# Subtest: autonomous generation failure and rejected approval cannot leave an applicable batch
-ok 12 - autonomous generation failure and rejected approval cannot leave an applicable batch
-  ---
-  duration_ms: 426.793554
-  type: 'test'
-  ...
-# Subtest: autonomous cancellation after allow ignores delayed batch tool results
-ok 13 - autonomous cancellation after allow ignores delayed batch tool results
-  ---
-  duration_ms: 183.035698
-  type: 'test'
-  ...
-# Subtest: answering a genuine SDK question never grants batch staging or hunk approval
-ok 14 - answering a genuine SDK question never grants batch staging or hunk approval
-  ---
-  duration_ms: 167.33353
-  type: 'test'
-  ...
-# Subtest: approval source-event mismatch is rejected before any human approval or staging
-ok 15 - approval source-event mismatch is rejected before any human approval or staging
-  ---
-  duration_ms: 350.755999
-  type: 'test'
-  ...
-# Subtest: autonomous cancellation while human approval is pending ignores a delayed allow
-ok 16 - autonomous cancellation while human approval is pending ignores a delayed allow
-  ---
-  duration_ms: 164.596933
-  type: 'test'
-  ...
-# Subtest: batch staging is no-write, independent and requires terminal success before review
-ok 17 - batch staging is no-write, independent and requires terminal success before review
-  ---
-  duration_ms: 60.343203
-  type: 'test'
-  ...
-# Subtest: coordinated multi-file application and exact undo preserve unrelated user edits
-ok 18 - coordinated multi-file application and exact undo preserve unrelated user edits
-  ---
-  duration_ms: 60.427342
-  type: 'test'
-  ...
-# Subtest: conflict or missing target blocks entire batch before any application
-ok 19 - conflict or missing target blocks entire batch before any application
-  ---
-  duration_ms: 76.388899
-  type: 'test'
-  ...
-# Subtest: partial editor failure restores only safe modifications and reports unsafe portions
-ok 20 - partial editor failure restores only safe modifications and reports unsafe portions
-  ---
-  duration_ms: 75.685447
-  type: 'test'
-  ...
-# Subtest: new files need explicit creation state, approval and guarded undo
-ok 21 - new files need explicit creation state, approval and guarded undo
-  ---
-  duration_ms: 24.521813
-  type: 'test'
-  ...
-# Subtest: invalid, rejected, failed or cancelled batches cannot later apply
-ok 22 - invalid, rejected, failed or cancelled batches cannot later apply
-  ---
-  duration_ms: 17.420097
-  type: 'test'
-  ...
-# Subtest: partial undo is reported and subsequent retry cannot overwrite changes
-ok 23 - partial undo is reported and subsequent retry cannot overwrite changes
-  ---
-  duration_ms: 11.835543
-  type: 'test'
-  ...
-# Subtest: creation undo and rollback verify deletion even when the editor reports success
-ok 24 - creation undo and rollback verify deletion even when the editor reports success
-  ---
-  duration_ms: 27.512421
-  type: 'test'
-  ...
-# Subtest: SDK contract: named session, real SSE consumption and removal of only owned registration
-ok 25 - SDK contract: named session, real SSE consumption and removal of only owned registration
-  ---
-  duration_ms: 453.964598
-  type: 'test'
-  ...
-# Subtest: SDK contract: failed registration preserves the original actionable error and stops companion
-ok 26 - SDK contract: failed registration preserves the original actionable error and stops companion
-  ---
-  duration_ms: 317.840137
-  type: 'test'
-  ...
-# Subtest: SDK contract: unsafe agent rejected before any MCP process or agent mutation
-ok 27 - SDK contract: unsafe agent rejected before any MCP process or agent mutation
-  ---
-  duration_ms: 12.958876
-  type: 'test'
-  ...
-# Subtest: SDK contract: cancellation stops backend and stream; overlapping turns rejected
-ok 28 - SDK contract: cancellation stops backend and stream; overlapping turns rejected
-  ---
-  duration_ms: 339.165981
-  type: 'test'
-  ...
-# Subtest: actual SDK turn aggregates replace snapshots; cache and reasoning never inflate total
-ok 29 - actual SDK turn aggregates replace snapshots; cache and reasoning never inflate total
-  ---
-  duration_ms: 5.416383
-  type: 'test'
-  ...
-# Subtest: missing metrics remain unknown; reported zero stays actual zero
-ok 30 - missing metrics remain unknown; reported zero stays actual zero
-  ---
-  duration_ms: 0.698589
-  type: 'test'
-  ...
-# Subtest: malformed, fractional, negative, overflowing and decreasing cumulative counts are rejected
-ok 31 - malformed, fractional, negative, overflowing and decreasing cumulative counts are rejected
-  ---
-  duration_ms: 0.626662
-  type: 'test'
-  ...
-# Subtest: estimates include repeated input, deduplicate tool events and remain distinct from actual
-ok 32 - estimates include repeated input, deduplicate tool events and remain distinct from actual
-  ---
-  duration_ms: 0.862806
-  type: 'test'
-  ...
-# Subtest: strict task threshold blocks new discovery but allows safety validation, commands and staging
-ok 33 - strict task threshold blocks new discovery but allows safety validation, commands and staging
-  ---
-  duration_ms: 1.518107
-  type: 'test'
-  ...
-# Subtest: off and advisory preserve operations even beyond task target
-ok 34 - off and advisory preserve operations even beyond task target
-  ---
-  duration_ms: 0.71968
-  type: 'test'
-  ...
-# Subtest: configuration is strict and bounded; mismatched model metadata cannot activate provider limits
-ok 35 - configuration is strict and bounded; mismatched model metadata cannot activate provider limits
-  ---
-  duration_ms: 2.761957
-  type: 'test'
-  ...
-# Subtest: conservative retrieval preserves a minimum useful package and warns about validation reserve
-ok 36 - conservative retrieval preserves a minimum useful package and warns about validation reserve
-  ---
-  duration_ms: 0.381605
-  type: 'test'
-  ...
-# Subtest: tool count, repeated identical discovery and repeated failed validation stop bounded nonessential work
-ok 37 - tool count, repeated identical discovery and repeated failed validation stop bounded nonessential work
-  ---
-  duration_ms: 1.26329
-  type: 'test'
-  ...
-# Subtest: provider profiles use separate rolling TPM/RPM estimates and expire without fixed delay
-ok 38 - provider profiles use separate rolling TPM/RPM estimates and expire without fixed delay
-  ---
-  duration_ms: 0.896503
-  type: 'test'
-  ...
-# Subtest: cancellation interrupts pacing and clears active state without a stuck permission
-ok 39 - cancellation interrupts pacing and clears active state without a stuck permission
-  ---
-  duration_ms: 1.721766
-  type: 'test'
-  ...
-# Subtest: fallback attempts carry spend and compaction never resets the task budget
-ok 40 - fallback attempts carry spend and compaction never resets the task budget
-  ---
-  duration_ms: 0.324995
-  type: 'test'
-  ...
-# Subtest: post-turn actual input participates in pacing without adding estimated and actual representations
-ok 41 - post-turn actual input participates in pacing without adding estimated and actual representations
-  ---
-  duration_ms: 0.600697
-  type: 'test'
-  ...
-# Subtest: aggregated metrics overflow remains unknown instead of publishing a fabricated saturated count
-ok 42 - aggregated metrics overflow remains unknown instead of publishing a fabricated saturated count
-  ---
-  duration_ms: 0.282859
-  type: 'test'
-  ...
-# Subtest: only explicitly successful terminal states with no pending actions pass
-ok 43 - only explicitly successful terminal states with no pending actions pass
-  ---
-  duration_ms: 3.240808
-  type: 'test'
-  ...
-# Subtest: only local TrueForge URLs can receive requests
-ok 44 - only local TrueForge URLs can receive requests
-  ---
-  duration_ms: 1.479213
-  type: 'test'
-  ...
-# Subtest: errors do not expose server bodies or credentials
-ok 45 - errors do not expose server bodies or credentials
-  ---
-  duration_ms: 1.36077
-  type: 'test'
-  ...
-# Subtest: fallback requires developer machine settings and has no automatic agent default
-ok 46 - fallback requires developer machine settings and has no automatic agent default
-  ---
-  duration_ms: 9.600446
-  type: 'test'
-  ...
-# Subtest: discovery and targeted content/symbol queries find files beyond 200 with secure Git inventory
-ok 47 - discovery and targeted content/symbol queries find files beyond 200 with secure Git inventory
-  ---
-  duration_ms: 2519.295899
-  type: 'test'
-  ...
-# Subtest: context ranks evidence, resolves explicit references and enforces measured estimate budget
-ok 48 - context ranks evidence, resolves explicit references and enforces measured estimate budget
-  ---
-  duration_ms: 256.090096
-  type: 'test'
-  ...
-# Subtest: range reads paginate large files while retaining ordinary read bounds and containment
-ok 49 - range reads paginate large files while retaining ordinary read bounds and containment
-  ---
-  duration_ms: 10.879936
-  type: 'test'
-  ...
-# Subtest: workspace disposal kills an in-flight Git metadata subprocess
-ok 50 - workspace disposal kills an in-flight Git metadata subprocess
-  ---
-  duration_ms: 60.54449
-  type: 'test'
-  ...
-# Subtest: structural outlines ground targeted range reads and bound metadata without bypassing path policy
-ok 51 - structural outlines ground targeted range reads and bound metadata without bypassing path policy
-  ---
-  duration_ms: 18.331897
-  type: 'test'
-  ...
-# Subtest: draft diagnostics distinguish malformed variants, hashes, missing and repeated anchors, overlaps and targets
-ok 52 - draft diagnostics distinguish malformed variants, hashes, missing and repeated anchors, overlaps and targets
-  ---
-  duration_ms: 68.681102
-  type: 'test'
-  ...
-# Subtest: three independent retained drafts assemble without writes; corrections supersede IDs and stale hashes fail
-ok 53 - three independent retained drafts assemble without writes; corrections supersede IDs and stale hashes fail
-  ---
-  duration_ms: 49.042226
-  type: 'test'
-  ...
-# Subtest: draft scopes, limits, links, anchor checks and cleanup reject obsolete or unsafe results
-ok 54 - draft scopes, limits, links, anchor checks and cleanup reject obsolete or unsafe results
-  ---
-  duration_ms: 35.186937
-  type: 'test'
-  ...
-# Subtest: runtime cancellation invalidates in-flight validation and cannot revive a retired scope
-ok 55 - runtime cancellation invalidates in-flight validation and cannot revive a retired scope
-  ---
-  duration_ms: 4.750025
-  type: 'test'
-  ...
-# Subtest: incremental drafts preserve prior edits; duplicate submissions need explicit replacement and current IDs
-ok 56 - incremental drafts preserve prior edits; duplicate submissions need explicit replacement and current IDs
-  ---
-  duration_ms: 26.024759
-  type: 'test'
-  ...
-# Subtest: streams deltas immediately and avoids duplicate final content
-ok 57 - streams deltas immediately and avoids duplicate final content
-  ---
-  duration_ms: 1.315733
-  type: 'test'
-  ...
-# Subtest: model failures and pauses surface actionable errors
-ok 58 - model failures and pauses surface actionable errors
-  ---
-  duration_ms: 3.106138
-  type: 'test'
-  ...
-# Subtest: failure taxonomy uses bounded status and SDK/provider metadata
-ok 59 - failure taxonomy uses bounded status and SDK/provider metadata
-  ---
-  duration_ms: 5.049892
-  type: 'test'
-  ...
-# Subtest: local conflicts, invalid patches, denied approvals and cancellation never select fallback
-ok 60 - local conflicts, invalid patches, denied approvals and cancellation never select fallback
-  ---
-  duration_ms: 0.748411
-  type: 'test'
-  ...
-# Subtest: terminal provider errors preserve typed causes while public logs contain no raw body or credentials
-ok 61 - terminal provider errors preserve typed causes while public logs contain no raw body or credentials
-  ---
-  duration_ms: 1.873765
-  type: 'test'
-  ...
-# Subtest: real MCP HTTP discovery, tools, policy errors, authentication and shutdown
-ok 62 - real MCP HTTP discovery, tools, policy errors, authentication and shutdown
-  ---
-  duration_ms: 297.704006
-  type: 'test'
-  ...
-# Subtest: companion process terminates on explicit stop and startup failure
-ok 63 - companion process terminates on explicit stop and startup failure
-  ---
-  duration_ms: 515.385961
-  type: 'test'
-  ...
-# Subtest: companion terminates when parent IPC disappears
-ok 64 - companion terminates when parent IPC disappears
-  ---
-  duration_ms: 311.954722
-  type: 'test'
-  ...
-# Subtest: opt-in proposal MCP validates structured edits and never writes files
-ok 65 - opt-in proposal MCP validates structured edits and never writes files
-  ---
-  duration_ms: 133.234043
-  type: 'test'
-  ...
-# Subtest: autonomous MCP exposes secure retrieval and no-write multi-file proposal transport
-ok 66 - autonomous MCP exposes secure retrieval and no-write multi-file proposal transport
-  ---
-  duration_ms: 334.488289
-  type: 'test'
-  ...
-# Subtest: optional autonomous tool pacing spaces responses without changing file contents
-ok 67 - optional autonomous tool pacing spaces responses without changing file contents
-  ---
-  duration_ms: 155.908181
-  type: 'test'
-  ...
-# Subtest: shipped renderer appends stream text in place, suppresses stale events and treats model HTML as literal data
-ok 68 - shipped renderer appends stream text in place, suppresses stale events and treats model HTML as literal data
-  ---
-  duration_ms: 10.21198
-  type: 'test'
-  ...
-# Subtest: shipped renderer sends typed prompt/keyboard/cancel/context messages and respects running controls
-ok 69 - shipped renderer sends typed prompt/keyboard/cancel/context messages and respects running controls
-  ---
-  duration_ms: 3.334504
-  type: 'test'
-  ...
-# Subtest: shipped renderer distinguishes staged/partial application and keeps Apply disabled for pending decisions
-ok 70 - shipped renderer distinguishes staged/partial application and keeps Apply disabled for pending decisions
-  ---
-  duration_ms: 2.90069
-  type: 'test'
-  ...
-# Subtest: shipped renderer updates collapsible tool rows and preserves a user scroll position
-ok 71 - shipped renderer updates collapsible tool rows and preserves a user scroll position
-  ---
-  duration_ms: 3.053171
-  type: 'test'
-  ...
-# Subtest: shipped renderer displays actual/configured/estimated/unknown budget labels as literal text
-ok 72 - shipped renderer displays actual/configured/estimated/unknown budget labels as literal text
-  ---
-  duration_ms: 2.630935
-  type: 'test'
-  ...
-# Subtest: panel manifest uses its own activity bar, preserves all existing commands and contributes a supported webview
-ok 73 - panel manifest uses its own activity bar, preserves all existing commands and contributes a supported webview
-  ---
-  duration_ms: 21.265329
-  type: 'test'
-  ...
-# Subtest: panel message schema rejects malformed data, authority fields, oversized input and arbitrary commands
-ok 74 - panel message schema rejects malformed data, authority fields, oversized input and arbitrary commands
-  ---
-  duration_ms: 7.955346
-  type: 'test'
-  ...
-# Subtest: panel maps genuine SDK delta events incrementally without printing the final content twice
-ok 75 - panel maps genuine SDK delta events incrementally without printing the final content twice
-  ---
-  duration_ms: 1.082129
-  type: 'test'
-  ...
-# Subtest: panel shows tool activity and exact approval/running/error state without treating it as source-edit permission
-ok 76 - panel shows tool activity and exact approval/running/error state without treating it as source-edit permission
-  ---
-  duration_ms: 1.408262
-  type: 'test'
-  ...
-# Subtest: panel cancellation and reset invalidate prior request/session identities and stale proposal exposure
-ok 77 - panel cancellation and reset invalidate prior request/session identities and stale proposal exposure
-  ---
-  duration_ms: 0.670373
-  type: 'test'
-  ...
-# Subtest: real-runtime non-JSON terminal denial stays rejected and cannot become a completed command
-ok 78 - real-runtime non-JSON terminal denial stays rejected and cannot become a completed command
-  ---
-  duration_ms: 0.650834
-  type: 'test'
-  ...
-# Subtest: panel proposal distinguishes staged, mixed decisions and partial application; incomplete proposals never surface
-ok 79 - panel proposal distinguishes staged, mixed decisions and partial application; incomplete proposals never surface
-  ---
-  duration_ms: 0.612111
-  type: 'test'
-  ...
-# Subtest: webview uses local nonce scripts, restrictive CSP, text-only rendering and bounded accessible controls
-ok 80 - webview uses local nonce scripts, restrictive CSP, text-only rendering and bounded accessible controls
-  ---
-  duration_ms: 16.117854
-  type: 'test'
-  ...
-# Subtest: selection capture preserves offsets, metadata and immutable snapshot
-ok 81 - selection capture preserves offsets, metadata and immutable snapshot
-  ---
-  duration_ms: 2.397594
-  type: 'test'
-  ...
-# Subtest: valid strict patch parsing and generation; no prose fallback
-ok 82 - valid strict patch parsing and generation; no prose fallback
-  ---
-  duration_ms: 6.102984
-  type: 'test'
-  ...
-# Subtest: rejects ambiguous, overlapping, out-of-selection and incorrect-base edits
-ok 83 - rejects ambiguous, overlapping, out-of-selection and incorrect-base edits
-  ---
-  duration_ms: 0.708457
-  type: 'test'
-  ...
-# Subtest: line hunks cover independent changes, additions, deletions, CRLF and EOF
-ok 84 - line hunks cover independent changes, additions, deletions, CRLF and EOF
-  ---
-  duration_ms: 2.034621
-  type: 'test'
-  ...
-# Subtest: staging never mutates disk; records hashes, identity and independent decisions
-ok 85 - staging never mutates disk; records hashes, identity and independent decisions
-  ---
-  duration_ms: 40.245456
-  type: 'test'
-  ...
-# Subtest: accept all renders all changes and keeps original file untouched
-ok 86 - accept all renders all changes and keeps original file untouched
-  ---
-  duration_ms: 6.07234
-  type: 'test'
-  ...
-# Subtest: reject all is terminal and cannot subsequently commit or approve
-ok 87 - reject all is terminal and cannot subsequently commit or approve
-  ---
-  duration_ms: 5.839268
-  type: 'test'
-  ...
-# Subtest: mixed acceptance applies only accepted hunks
-ok 88 - mixed acceptance applies only accepted hunks
-  ---
-  duration_ms: 4.430454
-  type: 'test'
-  ...
-# Subtest: stale versions and changed content rejected; external file conflicts detected
-ok 89 - stale versions and changed content rejected; external file conflicts detected
-  ---
-  duration_ms: 13.800199
-  type: 'test'
-  ...
-# Subtest: staging rejects missing tool approval, wrong targets, traversal and symlink escapes
-ok 90 - staging rejects missing tool approval, wrong targets, traversal and symlink escapes
-  ---
-  duration_ms: 10.595575
-  type: 'test'
-  ...
-# Subtest: cancellation before approval, after staging, and delayed staging is terminal
-ok 91 - cancellation before approval, after staging, and delayed staging is terminal
-  ---
-  duration_ms: 10.510716
-  type: 'test'
-  ...
-# Subtest: failed application cannot be retried with the same proposal
-ok 92 - failed application cannot be retried with the same proposal
-  ---
-  duration_ms: 4.751868
-  type: 'test'
-  ...
-# Subtest: path revalidation blocks symlink replacement after approval
-ok 93 - path revalidation blocks symlink replacement after approval
-  ---
-  duration_ms: 8.1402
-  type: 'test'
-  ...
-# Subtest: an unreachable primary endpoint falls back once to a configured SDK fixture with fresh approval
-ok 94 - an unreachable primary endpoint falls back once to a configured SDK fixture with fresh approval
-  ---
-  duration_ms: 457.738665
-  type: 'test'
-  ...
-# Subtest: SDK fallback uses fresh inline sessions, owned connectors and fresh approvals after staged failure
-ok 95 - SDK fallback uses fresh inline sessions, owned connectors and fresh approvals after staged failure
-  ---
-  duration_ms: 699.004812
-  type: 'test'
-  ...
-# Subtest: both providers fail once, then the next manual command succeeds without restart
-ok 96 - both providers fail once, then the next manual command succeeds without restart
-  ---
-  duration_ms: 1377.663863
-  type: 'test'
-  ...
-# Subtest: approval denial and malformed model patches never fallback
-ok 97 - approval denial and malformed model patches never fallback
-  ---
-  duration_ms: 444.005056
-  type: 'test'
-  ...
-# Subtest: cancel during primary stream, fallback preparation and approval prevents delayed activation
-ok 98 - cancel during primary stream, fallback preparation and approval prevents delayed activation
-  ---
-  duration_ms: 576.378261
-  type: 'test'
-  ...
-# Subtest: fallback must be explicitly configured, distinct and existing
-ok 99 - fallback must be explicitly configured, distinct and existing
-  ---
-  duration_ms: 333.074032
-  type: 'test'
-  ...
-# Subtest: autonomous fallback never adopts failed generation files or approvals
-ok 100 - autonomous fallback never adopts failed generation files or approvals
-  ---
-  duration_ms: 436.919758
-  type: 'test'
-  ...
-# Subtest: cancellation during fallback initialization and secondary streaming cleans both sessions
-ok 101 - cancellation during fallback initialization and secondary streaming cleans both sessions
-  ---
-  duration_ms: 579.398355
-  type: 'test'
-  ...
-# Subtest: external edits during fallback approval remain intact and cannot become a proposal
-ok 102 - external edits during fallback approval remain intact and cannot become a proposal
-  ---
-  duration_ms: 342.861021
-  type: 'test'
-  ...
-# Subtest: a failed SDK denial submission never changes user rejection into fallback
-ok 103 - a failed SDK denial submission never changes user rejection into fallback
-  ---
-  duration_ms: 182.184224
-  type: 'test'
-  ...
-# Subtest: real SDK/companion over-budget request never starts inference, revokes authority and never selects fallback
-ok 104 - real SDK/companion over-budget request never starts inference, revokes authority and never selects fallback
-  ---
-  duration_ms: 571.367156
-  type: 'test'
-  ...
-# Subtest: real SDK snapshots apply only matching enabled profile limits without mutating saved manifests
-ok 105 - real SDK snapshots apply only matching enabled profile limits without mutating saved manifests
-  ---
-  duration_ms: 1212.833694
-  type: 'test'
-  ...
-# Subtest: range deduplication revalidates hashes, rejects stale files, and resets with request scope
-ok 106 - range deduplication revalidates hashes, rejects stale files, and resets with request scope
-  ---
-  duration_ms: 47.199918
-  type: 'test'
-  ...
-# Subtest: deduplication never bypasses sensitive-path, symlink or disposed authorization checks
-ok 107 - deduplication never bypasses sensitive-path, symlink or disposed authorization checks
-  ---
-  duration_ms: 21.046109
-  type: 'test'
-  ...
-# Subtest: retrieval omits changed scan snapshots instead of attributing stale code to current hashes
-ok 108 - retrieval omits changed scan snapshots instead of attributing stale code to current hashes
-  ---
-  duration_ms: 31.154548
-  type: 'test'
-  ...
-# Subtest: checkpoint metadata contains no source or approval; invalidation and new sessions cannot reuse draft IDs
-ok 109 - checkpoint metadata contains no source or approval; invalidation and new sessions cannot reuse draft IDs
-  ---
-  duration_ms: 33.908071
-  type: 'test'
-  ...
-# Subtest: syntax preflight parses JSON/CommonJS without executing code, and reports actionable failures
-ok 110 - syntax preflight parses JSON/CommonJS without executing code, and reports actionable failures
-  ---
-  duration_ms: 22.450927
-  type: 'test'
-  ...
-# Subtest: actual stateless MCP shares request-scoped deduplication and strict limits while preserving checks
-ok 111 - actual stateless MCP shares request-scoped deduplication and strict limits while preserving checks
-  ---
-  duration_ms: 223.077396
-  type: 'test'
-  ...
-# Subtest: authorized root replacement invalidates context access and short ranges never inflate response cost
-ok 112 - authorized root replacement invalidates context access and short ranges never inflate response cost
-  ---
-  duration_ms: 7.518959
-  type: 'test'
-  ...
-# Subtest: low-budget outlines and ranges preserve hashes while precisely disclosing reduced source output
-ok 113 - low-budget outlines and ranges preserve hashes while precisely disclosing reduced source output
-  ---
-  duration_ms: 5.162918
-  type: 'test'
-  ...
-# Subtest: SDK + real MCP: approved failed command returns exit 7, retained correction gets separate staging and pending hunks
-ok 114 - SDK + real MCP: approved failed command returns exit 7, retained correction gets separate staging and pending hunks
-  ---
-  duration_ms: 1251.387524
-  type: 'test'
-  ...
-# Subtest: SDK terminal denial returns safe feedback and executes no MCP tools
-ok 115 - SDK terminal denial returns safe feedback and executes no MCP tools
-  ---
-  duration_ms: 289.161471
-  type: 'test'
-  ...
-# Subtest: SDK provider failure after terminal refusal never triggers model fallback or execution
-ok 116 - SDK provider failure after terminal refusal never triggers model fallback or execution
-  ---
-  duration_ms: 291.084304
-  type: 'test'
-  ...
-# Subtest: SDK cancel while terminal approval pending ignores a delayed affirmative reply and stops without fallback
-ok 117 - SDK cancel while terminal approval pending ignores a delayed affirmative reply and stops without fallback
-  ---
-  duration_ms: 249.425814
-  type: 'test'
-  ...
-# Subtest: SDK fallback after terminal permission revokes the old grant and requires a fresh correlated approval
-ok 118 - SDK fallback after terminal permission revokes the old grant and requires a fresh correlated approval
-  ---
-  duration_ms: 1041.576785
-  type: 'test'
-  ...
-# Subtest: SDK terminal approval with the wrong source event is refused before developer approval or execution
-ok 119 - SDK terminal approval with the wrong source event is refused before developer approval or execution
-  ---
-  duration_ms: 277.094627
-  type: 'test'
-  ...
-# Subtest: terminal policy: typed operations reject arbitrary commands, flags, chains, inline code and malformed variants
-ok 120 - terminal policy: typed operations reject arbitrary commands, flags, chains, inline code and malformed variants
-  ---
-  duration_ms: 5.777702
-  type: 'test'
-  ...
-# Subtest: terminal confinement rejects traversal, absolute paths, shell text and symlink escapes before approval
-ok 121 - terminal confinement rejects traversal, absolute paths, shell text and symlink escapes before approval
-  ---
-  duration_ms: 61.571268
-  type: 'test'
-  ...
-# Subtest: terminal grant: no approval, denied/mismatched payload and replay execute zero additional commands
-ok 122 - terminal grant: no approval, denied/mismatched payload and replay execute zero additional commands
-  ---
-  duration_ms: 739.66321
-  type: 'test'
-  ...
-# Subtest: terminal returns real Git output, nonzero command status and permits a subsequent command after failure
-ok 123 - terminal returns real Git output, nonzero command status and permits a subsequent command after failure
-  ---
-  duration_ms: 552.824028
-  type: 'test'
-  ...
-# Subtest: terminal timeout kills nested detached descendants in the PID namespace
-ok 124 - terminal timeout kills nested detached descendants in the PID namespace
-  ---
-  duration_ms: 1032.895347
-  type: 'test'
-  ...
-# Subtest: terminal output budget is combined and explicit; excess output terminates execution
-ok 125 - terminal output budget is combined and explicit; excess output terminates execution
-  ---
-  duration_ms: 493.70632
-  type: 'test'
-  ...
-# Subtest: terminal cancellation revokes pending grants, stops execution and refuses stale sessions
-ok 126 - terminal cancellation revokes pending grants, stops execution and refuses stale sessions
-  ---
-  duration_ms: 22.521884
-  type: 'test'
-  ...
-# Subtest: terminal approval is bound to directory identity and cannot follow a replacement
-ok 127 - terminal approval is bound to directory identity and cannot follow a replacement
-  ---
-  duration_ms: 12.549713
-  type: 'test'
-  ...
-# Subtest: terminal sandbox blocks source writes, host reads and networking, and strips inherited credentials
-ok 128 - terminal sandbox blocks source writes, host reads and networking, and strips inherited credentials
-  ---
-  duration_ms: 462.239757
-  type: 'test'
-  ...
-# Subtest: command output redacts recognized sensitive markers and terminal controls
-ok 129 - command output redacts recognized sensitive markers and terminal controls
-  ---
-  duration_ms: 0.74192
-  type: 'test'
-  ...
-# Subtest: approved command output redacts sensitive markers independently in stdout and stderr
-ok 130 - approved command output redacts sensitive markers independently in stdout and stderr
-  ---
-  duration_ms: 396.546997
-  type: 'test'
-  ...
-# Subtest: terminal stop awaits process cleanup and permanently closes command authority
-ok 131 - terminal stop awaits process cleanup and permanently closes command authority
-  ---
-  duration_ms: 13.819903
-  type: 'test'
-  ...
-# Subtest: stopping the actual companion during a running MCP command cleans up the process and its access
-ok 132 - stopping the actual companion during a running MCP command cleans up the process and its access
-  ---
-  duration_ms: 656.602731
-  type: 'test'
-  ...
-# Subtest: authenticated MCP advertises run_command but cannot grant itself authorization or use unknown schema fields
-ok 133 - authenticated MCP advertises run_command but cannot grant itself authorization or use unknown schema fields
-  ---
-  duration_ms: 89.142537
-  type: 'test'
-  ...
-# Subtest: approval-wait deadline is a local timeout and never falls back or submits a delayed allow
-ok 134 - approval-wait deadline is a local timeout and never falls back or submits a delayed allow
-  ---
-  duration_ms: 10356.309255
-  type: 'test'
-  ...
-# Subtest: lists, reads, and searches real files without changing them
-ok 135 - lists, reads, and searches real files without changing them
-  ---
-  duration_ms: 35.407296
-  type: 'test'
-  ...
-# Subtest: rejects traversal, absolute paths, alternate separators, hidden and sensitive paths
-ok 136 - rejects traversal, absolute paths, alternate separators, hidden and sensitive paths
-  ---
-  duration_ms: 17.959807
-  type: 'test'
-  ...
-# Subtest: rejects external and internal symlinks, directory symlinks, hardlinks and special files
-ok 137 - rejects external and internal symlinks, directory symlinks, hardlinks and special files
-  ---
-  duration_ms: 21.808488
-  type: 'test'
-  ...
-# Subtest: bounds reads, file traversal, matches and binary decoding
-ok 138 - bounds reads, file traversal, matches and binary decoding
-  ---
-  duration_ms: 134.264592
-  type: 'test'
-  ...
-# Subtest: rejects sensitive directories as authorized roots
-ok 139 - rejects sensitive directories as authorized roots
-  ---
-  duration_ms: 6.251431
-  type: 'test'
-  ...
-# Subtest: ancestor symlink replacement races never disclose outside file contents
-ok 140 - ancestor symlink replacement races never disclose outside file contents
-  ---
-  duration_ms: 69.297291
-  type: 'test'
-  ...
-1..140
-# tests 140
-# suites 0
-# pass 140
-# fail 0
-# cancelled 0
-# skipped 0
-# todo 0
-# duration_ms 14484.001922
+✔ SDK approval: exact persisted source, genuine approval input then staging; hunk review is separate (701.819675ms)
+✔ SDK retained draft extension correlates combined original edits with fresh final staging permission (502.003282ms)
+✔ retained draft SDK protocol requires exact approval, terminal success and an unchanged final payload (1789.773881ms)
+✔ cancellation during draft IPC setup prevents inference and rejects overlapping turns (423.749209ms)
+✔ SDK approval: rejection submits deny and never executes tool or stages (460.755563ms)
+✔ SDK approval: malformed model tool arguments and model errors preserve original (798.676719ms)
+✔ SDK approval: cancel waiting for human approval ignores delayed human answer (351.399695ms)
+✔ SDK approval: cancel after allow ignores delayed tool result (319.764877ms)
+✔ unsuccessful completion after staged patch always invalidates proposal (1464.926865ms)
+✔ failure during approval or after model output cannot become a proposal (647.341837ms)
+✔ autonomous SDK contract correlates deferred batch approval and terminal success (278.050407ms)
+✔ autonomous generation failure and rejected approval cannot leave an applicable batch (515.007259ms)
+✔ autonomous cancellation after allow ignores delayed batch tool results (258.686558ms)
+✔ answering a genuine SDK question never grants batch staging or hunk approval (270.753396ms)
+✔ approval source-event mismatch is rejected before any human approval or staging (460.143702ms)
+✔ autonomous cancellation while human approval is pending ignores a delayed allow (206.532465ms)
+✔ batch staging is no-write, independent and requires terminal success before review (66.540329ms)
+✔ coordinated multi-file application and exact undo preserve unrelated user edits (54.466122ms)
+✔ conflict or missing target blocks entire batch before any application (80.839175ms)
+✔ partial editor failure restores only safe modifications and reports unsafe portions (44.932545ms)
+✔ new files need explicit creation state, approval and guarded undo (15.426728ms)
+✔ invalid, rejected, failed or cancelled batches cannot later apply (35.416019ms)
+✔ partial undo is reported and subsequent retry cannot overwrite changes (20.738145ms)
+✔ creation undo and rollback verify deletion even when the editor reports success (40.08886ms)
+✔ SDK contract: named session, real SSE consumption and removal of only owned registration (587.933812ms)
+✔ SDK contract: failed registration preserves the original actionable error and stops companion (397.462675ms)
+✔ SDK contract: unsafe agent rejected before any MCP process or agent mutation (23.369322ms)
+✔ SDK contract: cancellation stops backend and stream; overlapping turns rejected (491.902201ms)
+✔ actual SDK turn aggregates replace snapshots; cache and reasoning never inflate total (9.936796ms)
+✔ missing metrics remain unknown; reported zero stays actual zero (1.063069ms)
+✔ malformed, fractional, negative, overflowing and decreasing cumulative counts are rejected (1.27158ms)
+✔ estimates include repeated input, deduplicate tool events and remain distinct from actual (1.752979ms)
+✔ strict task threshold blocks new discovery but allows safety validation, commands and staging (2.901059ms)
+✔ off and advisory preserve operations even beyond task target (0.856138ms)
+✔ configuration is strict and bounded; mismatched model metadata cannot activate provider limits (4.489894ms)
+✔ conservative retrieval preserves a minimum useful package and warns about validation reserve (0.501375ms)
+✔ tool count, repeated identical discovery and repeated failed validation stop bounded nonessential work (0.820075ms)
+✔ provider profiles use separate rolling TPM/RPM estimates and expire without fixed delay (1.149682ms)
+✔ cancellation interrupts pacing and clears active state without a stuck permission (4.782926ms)
+✔ fallback attempts carry spend and compaction never resets the task budget (0.730837ms)
+✔ post-turn actual input participates in pacing without adding estimated and actual representations (0.996187ms)
+✔ aggregated metrics overflow remains unknown instead of publishing a fabricated saturated count (0.797177ms)
+✔ only explicitly successful terminal states with no pending actions pass (7.317069ms)
+✔ only local TrueForge URLs can receive requests (2.428374ms)
+✔ errors do not expose server bodies or credentials (1.646366ms)
+✔ fallback requires developer machine settings and has no automatic agent default (28.142109ms)
+✔ discovery and targeted content/symbol queries find files beyond 200 with secure Git inventory (3619.638808ms)
+✔ context ranks evidence, resolves explicit references and enforces measured estimate budget (351.916725ms)
+✔ range reads paginate large files while retaining ordinary read bounds and containment (16.506951ms)
+✔ workspace disposal kills an in-flight Git metadata subprocess (106.141811ms)
+✔ structural outlines ground targeted range reads and bound metadata without bypassing path policy (32.360141ms)
+✔ draft diagnostics distinguish malformed variants, hashes, missing and repeated anchors, overlaps and targets (114.649206ms)
+✔ three independent retained drafts assemble without writes; corrections supersede IDs and stale hashes fail (51.384037ms)
+✔ draft scopes, limits, links, anchor checks and cleanup reject obsolete or unsafe results (28.501178ms)
+✔ runtime cancellation invalidates in-flight validation and cannot revive a retired scope (13.189516ms)
+✔ incremental drafts preserve prior edits; duplicate submissions need explicit replacement and current IDs (41.86965ms)
+✔ streams deltas immediately and avoids duplicate final content (2.139127ms)
+✔ model failures and pauses surface actionable errors (2.799445ms)
+✔ failure taxonomy uses bounded status and SDK/provider metadata (4.901804ms)
+✔ local conflicts, invalid patches, denied approvals and cancellation never select fallback (2.853914ms)
+✔ terminal provider errors preserve typed causes while public logs contain no raw body or credentials (2.517874ms)
+✔ real MCP HTTP discovery, tools, policy errors, authentication and shutdown (371.27086ms)
+✔ companion process terminates on explicit stop and startup failure (763.622394ms)
+✔ companion terminates when parent IPC disappears (402.367263ms)
+✔ opt-in proposal MCP validates structured edits and never writes files (97.597416ms)
+✔ autonomous MCP exposes secure retrieval and no-write multi-file proposal transport (456.809567ms)
+✔ optional autonomous tool pacing spaces responses without changing file contents (178.511908ms)
+✔ shipped renderer appends stream text in place, suppresses stale events and treats model HTML as literal data (16.681692ms)
+✔ shipped renderer sends typed prompt/keyboard/cancel/context messages and respects running controls (6.859655ms)
+✔ shipped renderer distinguishes staged/partial application and keeps Apply disabled for pending decisions (15.635248ms)
+✔ shipped renderer updates collapsible tool rows and preserves a user scroll position (4.979591ms)
+✔ shipped renderer displays actual/configured/estimated/unknown budget labels as literal text (3.660442ms)
+✔ panel manifest uses its own activity bar, preserves all existing commands and contributes a supported webview (26.620186ms)
+✔ panel message schema rejects malformed data, authority fields, oversized input and arbitrary commands (11.82741ms)
+✔ panel maps genuine SDK delta events incrementally without printing the final content twice (1.947682ms)
+✔ panel shows tool activity and exact approval/running/error state without treating it as source-edit permission (1.731221ms)
+✔ panel cancellation and reset invalidate prior request/session identities and stale proposal exposure (1.116026ms)
+✔ real-runtime non-JSON terminal denial stays rejected and cannot become a completed command (1.024167ms)
+✔ panel proposal distinguishes staged, mixed decisions and partial application; incomplete proposals never surface (0.681906ms)
+✔ webview uses local nonce scripts, restrictive CSP, text-only rendering and bounded accessible controls (11.90247ms)
+✔ selection capture preserves offsets, metadata and immutable snapshot (3.863962ms)
+✔ valid strict patch parsing and generation; no prose fallback (9.774952ms)
+✔ rejects ambiguous, overlapping, out-of-selection and incorrect-base edits (0.858349ms)
+✔ line hunks cover independent changes, additions, deletions, CRLF and EOF (2.638486ms)
+✔ staging never mutates disk; records hashes, identity and independent decisions (58.011612ms)
+✔ accept all renders all changes and keeps original file untouched (11.412487ms)
+✔ reject all is terminal and cannot subsequently commit or approve (13.711136ms)
+✔ mixed acceptance applies only accepted hunks (5.660722ms)
+✔ stale versions and changed content rejected; external file conflicts detected (12.640193ms)
+✔ staging rejects missing tool approval, wrong targets, traversal and symlink escapes (7.856941ms)
+✔ cancellation before approval, after staging, and delayed staging is terminal (5.275973ms)
+✔ failed application cannot be retried with the same proposal (4.352341ms)
+✔ path revalidation blocks symlink replacement after approval (5.404973ms)
+✔ an unreachable primary endpoint falls back once to a configured SDK fixture with fresh approval (685.277412ms)
+✔ SDK fallback uses fresh inline sessions, owned connectors and fresh approvals after staged failure (870.961621ms)
+✔ both providers fail once, then the next manual command succeeds without restart (1944.752864ms)
+✔ approval denial and malformed model patches never fallback (598.78115ms)
+✔ cancel during primary stream, fallback preparation and approval prevents delayed activation (788.753489ms)
+✔ fallback must be explicitly configured, distinct and existing (545.439814ms)
+✔ autonomous fallback never adopts failed generation files or approvals (579.311089ms)
+✔ cancellation during fallback initialization and secondary streaming cleans both sessions (793.350197ms)
+✔ external edits during fallback approval remain intact and cannot become a proposal (458.916493ms)
+✔ a failed SDK denial submission never changes user rejection into fallback (260.819262ms)
+✔ real SDK/companion over-budget request never starts inference, revokes authority and never selects fallback (736.873614ms)
+✔ real SDK snapshots apply only matching enabled profile limits without mutating saved manifests (1763.494649ms)
+✔ range deduplication revalidates hashes, rejects stale files, and resets with request scope (68.442511ms)
+✔ deduplication never bypasses sensitive-path, symlink or disposed authorization checks (5.960088ms)
+✔ retrieval omits changed scan snapshots instead of attributing stale code to current hashes (27.289981ms)
+✔ checkpoint metadata contains no source or approval; invalidation and new sessions cannot reuse draft IDs (19.767301ms)
+✔ syntax preflight parses JSON/CommonJS without executing code, and reports actionable failures (1209.399748ms)
+✔ actual stateless MCP shares request-scoped deduplication and strict limits while preserving checks (312.607372ms)
+✔ authorized root replacement invalidates context access and short ranges never inflate response cost (12.508227ms)
+✔ low-budget outlines and ranges preserve hashes while precisely disclosing reduced source output (8.911731ms)
+✔ SDK + real MCP: approved failed command returns exit 7, retained correction gets separate staging and pending hunks (1882.977444ms)
+✔ SDK terminal denial returns safe feedback and executes no MCP tools (446.641076ms)
+✔ SDK provider failure after terminal refusal never triggers model fallback or execution (400.168873ms)
+✔ SDK cancel while terminal approval pending ignores a delayed affirmative reply and stops without fallback (356.303099ms)
+✔ SDK fallback after terminal permission revokes the old grant and requires a fresh correlated approval (1424.813647ms)
+✔ SDK terminal approval with the wrong source event is refused before developer approval or execution (372.918823ms)
+✔ terminal policy: typed operations reject arbitrary commands, flags, chains, inline code and malformed variants (8.602357ms)
+✔ terminal confinement rejects traversal, absolute paths, shell text and symlink escapes before approval (74.941745ms)
+✔ terminal grant: no approval, denied/mismatched payload and replay execute zero additional commands (928.397325ms)
+✔ terminal returns real Git output, nonzero command status and permits a subsequent command after failure (739.468347ms)
+✔ terminal timeout kills nested detached descendants in the PID namespace (1059.146981ms)
+✔ terminal output budget is combined and explicit; excess output terminates execution (684.722876ms)
+✔ terminal cancellation revokes pending grants, stops execution and refuses stale sessions (20.101974ms)
+✔ terminal approval is bound to directory identity and cannot follow a replacement (8.967543ms)
+✔ terminal sandbox blocks source writes, host reads and networking, and strips inherited credentials (641.170387ms)
+✔ command output redacts recognized sensitive markers and terminal controls (0.788152ms)
+✔ approved command output redacts sensitive markers independently in stdout and stderr (616.892586ms)
+✔ terminal stop awaits process cleanup and permanently closes command authority (16.947942ms)
+✔ stopping the actual companion during a running MCP command cleans up the process and its access (862.433199ms)
+✔ authenticated MCP advertises run_command but cannot grant itself authorization or use unknown schema fields (134.281075ms)
+✔ approval-wait deadline is a local timeout and never falls back or submits a delayed allow (10465.318004ms)
+✔ lists, reads, and searches real files without changing them (62.000153ms)
+✔ rejects traversal, absolute paths, alternate separators, hidden and sensitive paths (24.096721ms)
+✔ rejects external and internal symlinks, directory symlinks, hardlinks and special files (9.520279ms)
+✔ bounds reads, file traversal, matches and binary decoding (197.724331ms)
+✔ rejects sensitive directories as authorized roots (4.797525ms)
+✔ ancestor symlink replacement races never disclose outside file contents (131.993098ms)
+ℹ tests 140
+ℹ suites 0
+ℹ pass 140
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16357.922909
