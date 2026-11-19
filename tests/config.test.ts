@@ -14,3 +14,11 @@ test('errors do not expose server bodies or credentials', () => {
   assert.ok(!publicError(error).includes('secret-value'));
   assert.ok(!publicError(new Error('secret-value')).includes('secret-value'));
 });
+
+test('fallback requires developer machine settings and has no automatic agent default', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { contributes: { configuration: { properties } } } = JSON.parse(await readFile('package.json', 'utf8'));
+  assert.equal(properties['forgepilot.fallbackEnabled'].default, false);
+  assert.equal(properties['forgepilot.fallbackAgentName'].default, '');
+  for (const name of ['forgepilot.fallbackEnabled', 'forgepilot.fallbackAgentName']) assert.equal(properties[name].scope, 'machine');
+});

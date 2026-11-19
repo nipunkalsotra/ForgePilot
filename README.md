@@ -1,8 +1,8 @@
-# ForgePilot — Phase 3
+# ForgePilot — Safe editing and model resilience
 
-**Verification status:** Phase 2.1 is committed and passes its gate. Phase 3 implementation passes local/editor tests, but official live Flask Task B has not passed; see [the verification report](docs/phase-3-verification.md). Phase 3 is not declared complete.
+**Verification status:** Phase 4 resilience and official Task C have live/native-host verification; see [Phase 4 evidence](docs/phase-4-verification.md). Phase 2.1 is committed and passes its gate. Phase 3 implementation passes local/editor tests, but official live Flask Task B has not passed; see [the verification report](docs/phase-3-verification.md). Phase 3 is not declared complete.
 
-A VS Code inline-editing agent powered by an existing **TrueForge saved agent**. The extension creates named sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
+A VS Code inline-editing agent powered by an existing **TrueForge saved agent**. The extension snapshots saved agents into isolated TrueForge sessions, sends turns through `@truefoundry/trueforge-sdk`, renders actual streamed text in the **ForgePilot** Output panel, and owns an authenticated local MCP workspace server. All model execution and tool orchestration run in TrueForge.
 
 Phase 1 read-only sessions retain `list_files`, `read_file`, and `search_workspace`. Phase 2 adds an opt-in `propose_patch` MCP tool, genuine TrueForge staging approval, native VS Code hunk review, approved buffer edits, cancellation and guarded undo. Phase 3 adds autonomous discovery and approved multi-file batches. Agent-accessible terminal execution remains outside this phase.
 
@@ -22,6 +22,24 @@ The verification driver now uses **0 ms** response pacing. Start at 0–1,000 ms
 
 Run one live verification at a time against a saved agent. Provider quotas can fail a run; failed completion invalidates the entire pending batch. Failed editor operations attempt guarded restoration of recognized applied portions and report any unsafe/partial state. `WorkspaceEdit` is not a filesystem transaction or a public version CAS. Do not edit the same files concurrently during application. See [architecture](docs/architecture.md), [Phase 2.1 hardening](docs/phase-2-hardening.md) and [Phase 3 verification](docs/phase-3-verification.md).
 
+## Provider failure and fallback
+
+Fallback is disabled by default. To authorize it, set **user/machine** settings `forgepilot.fallbackEnabled: true` and `forgepilot.fallbackAgentName` to a distinct existing TrueForge saved agent. Verify that agent's model availability and normal usage terms first. For example, `forge-coder-openrouter` can be primary and the already configured `forge-coder` can be secondary. No model, payment method, key or endpoint is selected or changed automatically.
+
+Only recognized provider/transport failures may switch agents, once per request. Invalid proposals, workspace conflicts, rejected approvals, user cancellation and an expired human approval wait do not. The failed generation is invalidated, backend cancellation requested, and its connector closed before a fresh session receives the original task. The saved agent definitions stay unchanged. Staging permission and hunk decisions must be given afresh. If both agents fail, a sanitized error identifies both failure categories, resources close, and another manual request remains available without restarting VS Code.
+
+Cancel Turn and Stop work while a connection or fallback is preparing. Progress notifications close when operations settle; fallback uses a nonblocking information notification. Files already applied with explicit approval are governed by the existing guarded undo, never by automatic provider recovery. A transient stream failure cannot apply a partial proposal. There is no automatic retry of application, no recursive fallback, and no extension-owned LLM loop.
+
+To reproduce official Task C, first prepare a **clean separate Flask checkout** at `22d924701a6ae2e4cd01e9a15bbaf3946094af65` with its test dependencies installed in a venv. Then run:
+
+```sh
+FORGEPILOT_FLASK_ROOT=/absolute/path/to/clean-flask \
+FORGEPILOT_FLASK_PYTHON=/absolute/path/to/venv/bin/python \
+VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:taskc
+```
+
+This explicit live test provisions and deletes **disposable** invalid-key and closed-port providers/agents, leaving real providers and both saved agent manifests unchanged. It makes genuine TrueForge inference through the configured `forge-coder` fallback, uses a disposable VS Code profile, checks native diffs/approvals, verifies Task A behavior and helper tests, and undoes the accepted change. Do not run it against a checkout with your own edits. Physical palette/modal clicks and the submission recording remain separate manual checks. See the [complete report](docs/phase-4-verification.md) for session identities, timings and limits. Phase 3 Task B remains incomplete and was not rerun during Phase 4.
+
 ## Inline editing
 
 1. Open a trusted local workspace, save the file, and select the code to modify.
@@ -31,7 +49,7 @@ Run one live verification at a time against a saved agent. Provider quotas can f
 5. Run **ForgePilot: Apply Accepted Hunks** after reviewing every hunk. Only accepted hunks enter the editor buffer; save normally to write them to disk.
 6. Use **ForgePilot: Undo Last Accepted Edit** to restore exactly the previous content. Undo refuses if the document or file has changed subsequently. **ForgePilot: Cancel Turn** invalidates pending proposals and requests SDK cancellation for an active turn.
 
-Start with saved UTF-8 text files up to 64 KiB. Edits are confined to the selected region of one file. Proposals are ephemeral; close/reopen, external modifications or document version changes require a new proposal. Read-only and proposal sessions share the same saved agent, so run live verification commands sequentially.
+Start with saved UTF-8 text files up to 64 KiB. Edits are confined to the selected region of one file. Proposals are ephemeral; close/reopen, external modifications or document version changes require a new proposal. The editor snapshots the selected saved agent without changing its manifest. Legacy standalone verification scripts still attach to saved agents; run those sequentially.
 
 See [Phase 2 verification](docs/phase-2-verification.md) for actual live sessions, automated host results, Flask Task A, manual checks and limits. Automated approval drivers do not verify physical keypresses or warning-button clicks.
 
@@ -138,6 +156,8 @@ Settings are machine scoped to keep a repository from redirecting TrueForge conn
 | --- | --- |
 | `forgepilot.baseUrl` | `http://localhost:8790` (loopback HTTP only) |
 | `forgepilot.agentName` | `forge-coder` |
+| `forgepilot.fallbackEnabled` | `false` (machine scoped, explicit opt-in) |
+| `forgepilot.fallbackAgentName` | empty (must name a distinct saved agent) |
 | `forgepilot.turnTimeoutSeconds` | `180` (up to 600; useful for multi-file tasks) |
 | `forgepilot.contextBudget` | `12000` estimated tokens (2,000–32,000) |
 | `forgepilot.autonomousToolIntervalMs` | `0` (optional 0–10,000 ms response pacing for limited provider plans) |
@@ -150,7 +170,7 @@ For optional TrueForge OIDC authentication, run **ForgePilot: Set TrueForge Auth
 code --new-window --extensionDevelopmentPath="$PWD" /absolute/path/to/workspace
 ```
 
-The `forgepilot.ask` command accepts an optional string argument for editor automation; without it the command opens an input box. Both paths use the same session, SDK streaming, safety checks, and companion.
+The `forgepilot.ask` command accepts an optional string argument for editor automation; without it the command opens an input box. Both paths use TrueForge SDK streaming, safety checks, and an authorized companion. New requests get fresh execution state; an explicitly started unused session can serve the next request.
 
 Errors include missing agents, unsafe agent settings, failed connector discovery, blocked loopback URLs, backend failures, paused turns, missing terminal events, and deadlines. Raw SDK error bodies, prompts, file contents, and credentials are excluded from structured logs. Assistant output is visible in the normal Output channel. Turn creation and registry mutations have SDK retries disabled to avoid duplicate operations after ambiguous failures. Recreate a session after a failed startup; inspect the saved session before retrying an interrupted turn.
 
@@ -166,9 +186,9 @@ VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 FORGEPILOT_EXTENSION_LIVE=1 VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension
 ```
 
-Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. The default host test activates the real extension and tests actual inline and multi-file editor diff/application/undo APIs using labelled proposal fixtures; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives production start/ask/stop against the real local saved agent and checks persisted MCP file contents. Tests default to the local URL and `forge-coder`; `TRUEFORGE_AGENT_NAME` selects a saved agent in the disposable profile. `FORGEPILOT_EXTENSION_PATH` can point at an installed VSIX's extension directory to check its actual bundle and contributions with the same host regression.
+Use your platform's actual VS Code executable for `VSCODE_EXECUTABLE_PATH`; omit it to let `@vscode/test-electron` download a test installation. A working graphical display (or Xvfb on Linux) is needed. Run GUI host suites sequentially so separate VS Code windows do not compete for editor focus. The default host test activates the real extension and tests actual inline and multi-file editor diff/application/undo APIs using labelled proposal fixtures; `FORGEPILOT_EXTENSION_LIVE=1` additionally drives production start/ask/stop against the real local saved agent and checks persisted MCP file contents. Tests default to the local URL and `forge-coder`; `TRUEFORGE_AGENT_NAME` selects a saved agent in the disposable profile. `FORGEPILOT_EXTENSION_PATH` can point at an installed VSIX's extension directory to check its actual bundle and contributions with the same host regression.
 
-Live verification uses disposable temporary fixtures, including an unpredictable file marker. It requires both actual companion tool logs and correlated persisted MCP history; there is no mock model fallback. It compares SHA-256 file snapshots before/after and leaves the TrueForge session for inspection. Results are written to ignored `artifacts/live-verification.json`. The GUI test uses a disposable profile and workspace. These checks can incur your configured provider's normal charges.
+Live verification uses disposable temporary fixtures, including an unpredictable file marker. It requires both actual companion tool logs and correlated persisted MCP history; there is no simulated model inference in these live checks. It compares SHA-256 file snapshots before/after and leaves the TrueForge session for inspection. Results are written to ignored `artifacts/live-verification.json`. The GUI test uses a disposable profile and workspace. These checks can incur your configured provider's normal charges.
 
 See [docs/phase-1-verification.md](docs/phase-1-verification.md) for the measured acceptance results, changed files, and remaining limitations.
 

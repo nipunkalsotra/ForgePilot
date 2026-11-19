@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import type { TrueForgeApi } from '@truefoundry/trueforge-sdk';
 import path from 'node:path';
-import type { Bridge } from './bridge';
+import type { AgentConnection } from './resilience';
 import { Workspace } from './workspace';
 import { BatchStore, type BatchPatch, type DocumentBaseline } from './batch';
 import { EditCoordinator, type EditorHost, type EditorChange } from './coordinator';
@@ -63,7 +63,7 @@ export class Autonomous implements vscode.TreeDataProvider<ReviewNode>, vscode.T
   private actualUsage?: TrueForgeApi.TurnMetrics;
   private activityOmitted = 0;
   private activity: { tool: string; callId: string; result: unknown; responseBytes: number }[] = [];
-  constructor(private readonly connect: () => Promise<{ bridge: Bridge; root: string }>, private readonly output: vscode.OutputChannel, private readonly scheme = 'forgepilot-agent') {}
+  constructor(private readonly connect: () => Promise<{ bridge: AgentConnection; root: string }>, private readonly output: vscode.OutputChannel, private readonly scheme = 'forgepilot-agent') {}
   get current() { return this.store?.current; }
   get evidence() { return structuredClone({ contexts: this.contexts, activity: this.activity, actualTrueForgeTurnMetrics: this.actualUsage, workspaceResponseEstimatedTokens: this.responseTokens, activityOmitted: this.activityOmitted, budgetScope: 'Each context_query package is budgeted; cumulative workspace tool response estimates are shown separately and exclude provider messages/output.' }); }
   getChildren(parent?: ReviewNode): ReviewNode[] {

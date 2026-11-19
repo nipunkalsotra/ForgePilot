@@ -61,7 +61,7 @@ try {
   assert.equal(await readFile(path.join(root, 'sample.ts'), 'utf8'), content);
   evidence.cancelDuringStreaming = 'PASS';
   evidence.result = 'PASS';
-} catch (error) { evidence.result = 'FAIL'; evidence.error = publicError(error); console.error(error instanceof Error ? error.message : publicError(error)); process.exitCode = 1; }
+} catch (error) { evidence.result = 'FAIL'; evidence.error = publicError(error); console.error(publicError(error)); process.exitCode = 1; }
 finally {
   await bridge.stop(); await rm(root, { recursive: true, force: true });
   await mkdir('artifacts', { recursive: true });

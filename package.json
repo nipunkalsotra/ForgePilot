@@ -172,6 +172,18 @@
           "maximum": 10000,
           "scope": "machine",
           "description": "Optional minimum interval between autonomous MCP tool responses, to reduce model request bursts on limited provider plans. Does not change provider settings or retry model calls."
+        },
+        "forgepilot.fallbackEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow at most one automatic transition to the explicitly configured saved fallback agent after provider failure. May incur that agent model's normal charges.",
+          "scope": "machine"
+        },
+        "forgepilot.fallbackAgentName": {
+          "type": "string",
+          "default": "",
+          "description": "Saved TrueForge agent authorized for fallback. Required when fallbackEnabled is true; no model is selected automatically.",
+          "scope": "machine"
         }
       }
     },
@@ -306,13 +318,14 @@
     "setup:agent": "node --import tsx scripts/setup-agent.ts",
     "pretest": "npm run build",
     "test": "node --import tsx --test --test-timeout=15000 tests/*.test.ts",
-    "test:unit": "node --import tsx --test --test-timeout=15000 tests/workspace.test.ts tests/events.test.ts tests/config.test.ts tests/patch.test.ts tests/completion.test.ts tests/context.test.ts tests/batch.test.ts tests/drafts.test.ts",
-    "test:integration": "npm run build && node --import tsx --test --test-timeout=15000 tests/mcp.test.ts tests/bridge.test.ts tests/approval.test.ts",
+    "test:unit": "node --import tsx --test --test-timeout=15000 tests/workspace.test.ts tests/events.test.ts tests/config.test.ts tests/patch.test.ts tests/completion.test.ts tests/context.test.ts tests/batch.test.ts tests/drafts.test.ts tests/failure.test.ts",
+    "test:integration": "npm run build && node --import tsx --test --test-timeout=15000 tests/mcp.test.ts tests/bridge.test.ts tests/approval.test.ts tests/resilience.test.ts",
     "test:live": "npm run build && node --import tsx scripts/verify-live.ts",
     "test:extension": "npm run build && node --import tsx scripts/verify-extension.ts",
     "check": "npm run build && npm run lint && npm test",
     "vscode:prepublish": "npm run build",
-    "test:editing:live": "npm run build && node --import tsx scripts/verify-editing-live.ts"
+    "test:editing:live": "npm run build && node --import tsx scripts/verify-editing-live.ts",
+    "test:taskc": "npm run build && node --import tsx scripts/verify-taskc.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.0",

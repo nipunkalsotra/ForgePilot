@@ -9,6 +9,7 @@ import { AUTONOMOUS_TOOLS } from './mcp/autonomous';
 import type { ContextPackage } from './context';
 import { requireSuccessfulCompletion } from './completion';
 import { ForgePilotError, type Logger } from './log';
+import { RequestFailure } from './failure';
 
 export interface BridgeOptions {
   baseUrl: string;
@@ -22,6 +23,8 @@ export interface BridgeOptions {
   autonomous?: boolean;
   contextBudget?: number;
   toolIntervalMs?: number;
+  /** Snapshot a saved agent into a session; never attach tools to its shared manifest. */
+  isolated?: boolean;
 }
 
 export class Bridge {
@@ -40,6 +43,7 @@ export class Bridge {
   private stopping?: Promise<void>;
   private started = false;
   private cancelling?: Promise<void>;
+  private startup?: AbortController;
   private readonly deadline: number;
 
   constructor(private readonly options: BridgeOptions) {
@@ -56,48 +60,57 @@ export class Bridge {
       || manifest.skills?.length || manifest.config?.sandbox?.enabled !== false
       || manifest.config?.dynamicSubAgents?.enabled !== false || manifest.config?.webSearch?.enabled !== false
       || manifest.config?.memory?.enabled !== false || manifest.config?.generativeUi?.enabled !== false) {
-      throw new ForgePilotError('Phase 1 needs a dedicated agent: explicitly disable sandbox, dynamic subagents, web search, memory and generative UI, remove skills and other MCP connectors. Stop other ForgePilot sessions first. See README.');
+      throw new RequestFailure('agent_policy', 'local');
     }
   }
 
   async start(): Promise<string> {
     if (this.started || this.stopping) throw new ForgePilotError('Create a new bridge to start another session.');
     this.started = true;
+    const controller = new AbortController(); this.startup = controller;
+    const request = { abortSignal: controller.signal, maxRetries: 0 };
     try {
-      const agents = await this.client.agents.list({ agentName: this.options.agentName });
+      const agents = await this.client.agents.list({ agentName: this.options.agentName }, request);
       for await (const agent of agents) {
         if (agent.name === this.options.agentName) { this.agentId = agent.id; break; }
       }
-      if (!this.agentId) throw new ForgePilotError(`Saved agent '${this.options.agentName}' was not found. Create it in TrueForge first (README).`);
-      const { data: agent } = await this.client.agents.get(this.agentId);
+      if (!this.agentId) throw new RequestFailure('model_configuration', 'local');
+      const { data: agent } = await this.client.agents.get(this.agentId, request);
       this.validateAgent(agent.manifest);
       this.modelName = agent.manifest.model.name;
+      if (this.options.isolated && !(await this.client.models.list(request)).data.some(m => m.name === this.modelName)) throw new RequestFailure('model_configuration', 'provider');
       const url = await this.companion.start(this.options.root, this.options.proposals, this.options.autonomous, this.options.contextBudget, this.options.toolIntervalMs);
+      controller.signal.throwIfAborted();
       // Mark before writes so an ambiguous response/timeout still attempts rollback.
       this.registered = true;
       await this.client.settings.mcpServers.create({ manifest: {
         type: 'remote', name: this.connectorName, description: 'ForgePilot bounded read-only workspace tools (temporary local connector)', url,
         auth: { type: 'header', headers: { Authorization: `Bearer ${this.companion.token}` } },
-      } });
-      const tools = await this.client.mcpServers.listTools(this.connectorName);
+      } }, request);
+      const tools = await this.client.mcpServers.listTools(this.connectorName, request);
       const expected = ['list_files', 'read_file', 'search_workspace', ...(this.options.proposals ? ['propose_patch'] : []), ...(this.options.autonomous ? AUTONOMOUS_TOOLS : [])];
       if (!expected.every(name => tools.data.some(t => t.name === name)) || tools.data.length !== expected.length) {
         throw new ForgePilotError('TrueForge did not discover the expected bounded workspace tools.');
       }
       // Re-read before replacing the manifest to reduce lost updates. TrueForge has no conditional-update API.
-      const { data: fresh } = await this.client.agents.get(this.agentId);
+      const { data: fresh } = await this.client.agents.get(this.agentId, request);
       this.validateAgent(fresh.manifest);
-      this.attached = true;
-      await this.client.agents.update(this.agentId, { manifest: { ...fresh.manifest, mcpServers: [{
+      const manifest: TrueForgeApi.AgentSpec = { ...fresh.manifest, mcpServers: [{
         name: this.connectorName, enableTools: expected, preload: !this.options.autonomous,
         ...(this.options.autonomous ? { preloadTools: ['context_query', 'read_range', 'search_code', 'draft_file', 'list_drafts', 'check_drafts', 'propose_drafts'] } : {}),
         requireApprovalForTools: [...(this.options.proposals ? ['propose_patch'] : []), ...(this.options.autonomous ? ['propose_batch', 'propose_drafts'] : [])],
-      }] } });
-      const { data: session } = await this.client.sessions.create({ agent: { name: this.options.agentName }, metadata: { client: 'ForgePilot', phase: this.options.autonomous ? '3' : this.options.proposals ? '2' : '1' } });
+      }] };
+      if (!this.options.isolated) {
+        this.attached = true;
+        await this.client.agents.update(this.agentId, { manifest }, request);
+      }
+      const { data: session } = await this.client.sessions.create({ agent: this.options.isolated ? { spec: manifest } : { name: this.options.agentName }, metadata: { client: 'ForgePilot', savedAgent: this.options.agentName, phase: this.options.isolated ? '4' : this.options.autonomous ? '3' : this.options.proposals ? '2' : '1' } }, request);
       this.sessionId = session.id;
+      controller.signal.throwIfAborted();
       this.options.log('session.created', { sessionId: session.id, agent: this.options.agentName, model: this.modelName, connector: this.connectorName });
       return session.id;
     } catch (error) { await this.stop(); throw error; }
+    finally { this.startup = undefined; }
   }
 
   async propose(store: PatchStore, instruction: string, write: (text: string) => void,
@@ -294,15 +307,20 @@ ${JSON.stringify({ instruction })}`;
     let finish!: () => void;
     const done = new Promise<void>(resolve => { finish = resolve; });
     this.active = { controller, done };
-    const timer = setTimeout(() => controller.abort(), this.deadline * 1000);
+    let waitingForUser = false;
+    let approvalDenied = false;
+    const timer = setTimeout(() => controller.abort(waitingForUser ? 'approval-deadline' : 'deadline'), this.deadline * 1000);
     const renderer = new EventRenderer(write, this.options.log);
     this.lastTurnMetrics = undefined;
     try {
-      const { data: current } = await this.client.agents.get(agentId, { abortSignal: controller.signal });
-      this.validateAgent(current.manifest);
-      if (this.options.autonomous && !current.manifest.mcpServers?.some(s => s.name === this.connectorName && ['propose_batch', 'propose_drafts'].every(t => s.requireApprovalForTools?.includes(t)))) throw new ForgePilotError('Batch approval policy changed. Restart the session.');
-      if (this.options.proposals && !current.manifest.mcpServers?.some(s => s.name === this.connectorName && s.requireApprovalForTools?.includes('propose_patch'))) throw new ForgePilotError('Patch tool approval policy changed. Stop and restart the session.');
-      if (!current.manifest.mcpServers?.some(s => s.name === this.connectorName)) throw new ForgePilotError('Workspace connector was detached. Stop and start the session again.');
+      const manifest = this.options.isolated ? await this.client.sessions.get(sessionId, { abortSignal: controller.signal }).then(({ data }) => {
+        if (data.agent.type !== 'inline') throw new ForgePilotError('Isolated session agent changed.');
+        return data.agent.spec;
+      }) : (await this.client.agents.get(agentId, { abortSignal: controller.signal })).data.manifest;
+      this.validateAgent(manifest);
+      if (this.options.autonomous && !manifest.mcpServers?.some(s => s.name === this.connectorName && ['propose_batch', 'propose_drafts'].every(t => s.requireApprovalForTools?.includes(t)))) throw new ForgePilotError('Batch approval policy changed. Restart the session.');
+      if (this.options.proposals && !manifest.mcpServers?.some(s => s.name === this.connectorName && s.requireApprovalForTools?.includes('propose_patch'))) throw new ForgePilotError('Patch tool approval policy changed. Stop and restart the session.');
+      if (!manifest.mcpServers?.some(s => s.name === this.connectorName)) throw new ForgePilotError('Workspace connector was detached. Stop and start the session again.');
       let turnId: string | undefined;
       let terminal = false;
       const stream = await this.client.sessions.createTurnStream(sessionId, { input: [{ type: 'user.message', content: prompt }] },
@@ -316,6 +334,7 @@ ${JSON.stringify({ instruction })}`;
           requireSuccessfulCompletion(event.state);
         }
         if (event.type === 'turn.created') turnId = event.turnId;
+        waitingForUser = event.type === 'tool.approval_required' || event.type === 'tool.response_required';
         const action = onEvent?.(event, controller.signal);
         let abortListener: (() => void) | undefined;
         let answers: TrueForgeApi.TurnUserEventMessage[] | undefined;
@@ -325,13 +344,15 @@ ${JSON.stringify({ instruction })}`;
             if (controller.signal.aborted) abortListener();
             else controller.signal.addEventListener('abort', abortListener, { once: true });
           })]) : undefined;
-        } finally { if (abortListener) controller.signal.removeEventListener('abort', abortListener); }
+        } finally { waitingForUser = false; if (abortListener) controller.signal.removeEventListener('abort', abortListener); }
         if (controller.signal.aborted) throw new ForgePilotError('Turn cancelled.');
         if (answers?.length) {
           if (!turnId) throw new ForgePilotError('Approval arrived without a turn identity.');
+          // The developer's denial wins even if submitting it fails or times out.
+          approvalDenied = answers.some(answer => answer.type === 'user.tool_approval' && answer.approval.status === 'deny');
           await this.client.sessions.createTurnEvents(sessionId, turnId, { events: answers }, { abortSignal: controller.signal, maxRetries: 0 });
           this.options.log('tool.approval.submitted', { turnId, count: answers.length });
-          if (answers.some(answer => answer.type === 'user.tool_approval' && answer.approval.status === 'deny')) throw new ForgePilotError('Patch tool approval rejected. Workspace unchanged.');
+          if (approvalDenied) throw new RequestFailure('approval_denied', 'local');
         }
         if (editing && (event.type === 'tool.approval_required' || event.type === 'tool.response_required' && answers?.length)) continue;
         renderer.accept(event);
@@ -340,11 +361,13 @@ ${JSON.stringify({ instruction })}`;
         }
       }
       if (controller.signal.aborted) throw new ForgePilotError('Turn cancelled.');
-      if (!terminal) throw new ForgePilotError('TrueForge stream ended without a terminal turn event. Inspect the session before retrying.');
+      if (!terminal) throw new RequestFailure('sdk_stream', 'local');
     } catch (error) {
+      clearTimeout(timer); // Cleanup latency cannot turn an observed failure into a new model deadline.
       // Closing a socket alone does not stop TrueForge's agent. Always request backend cancellation.
       await this.cancelBackend();
-      if (controller.signal.aborted) throw new ForgePilotError('Turn cancelled or its deadline expired. Workspace files were not modified.');
+      if (approvalDenied && (!controller.signal.aborted || ['deadline', 'approval-deadline'].includes(controller.signal.reason as string))) throw new RequestFailure('approval_denied', 'local', error);
+      if (controller.signal.aborted) throw new RequestFailure(['deadline', 'approval-deadline'].includes(controller.signal.reason as string) ? 'timeout' : 'cancelled', controller.signal.reason === 'deadline' ? 'provider' : 'local', error);
       throw error;
     } finally {
       clearTimeout(timer);
@@ -373,6 +396,7 @@ ${JSON.stringify({ instruction })}`;
 
   async cancel(): Promise<void> {
     this.requestEpoch++;
+    this.startup?.abort();
     const active = this.active;
     if (!active) {
       if (this.autonomousPending) await this.companion.setDraftRequest().catch(() => this.companion.stop());

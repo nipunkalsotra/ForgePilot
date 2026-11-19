@@ -39,6 +39,7 @@ export class BatchStore {
   private cancelled = false;
   constructor(readonly workspace: Workspace, private readonly baseline?: (path: string, operation: 'modify' | 'create') => Promise<DocumentBaseline>) {}
   get current(): BatchProposal | undefined { return this.proposal ? structuredClone(this.proposal) : undefined; }
+  fork(): BatchStore { return new BatchStore(this.workspace, this.baseline); }
   cancel(): void { this.cancelled = true; if (this.proposal?.status === 'staged') { this.proposal.status = 'cancelled'; for (const file of this.proposal.files) if (file.status === 'staged') file.status = 'cancelled'; } }
   private live(): void { if (this.cancelled) throw new ForgePilotError('Batch request is cancelled.'); }
   async stage(value: unknown, toolApproved: boolean): Promise<BatchProposal> {

@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
-import { Bridge } from './bridge';
+import { classifyFailure } from './failure';
+import { ResilientBridge } from './resilience';
 import { Autonomous, type ReviewNode } from './autonomous';
 import { Editing } from './editing';
 import type { Hunk } from './patch';
 import { ForgePilotError, jsonLogger, publicError } from './log';
 
-let bridge: Bridge | undefined;
+let bridge: ResilientBridge | undefined;
 let starting: Promise<void> | undefined;
 let closing: Promise<void> | undefined;
 let editing: Editing | undefined;
@@ -16,7 +17,7 @@ let authorizedRoot: string | undefined;
 let output: vscode.OutputChannel;
 let logs: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext): { editing: Editing; autonomous: Autonomous } {
+export function activate(context: vscode.ExtensionContext): { editing: Editing; autonomous: Autonomous; readonly recovery: ResilientBridge['evidence'] } {
   output = vscode.window.createOutputChannel('ForgePilot');
   logs = vscode.window.createOutputChannel('ForgePilot Logs');
   context.subscriptions.push(output, logs);
@@ -24,7 +25,9 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
   const report = (error: unknown) => {
     const message = publicError(error);
     output.appendLine(`\n[error] ${message}`);
-    log('operation.failed');
+    const failure = classifyFailure(error);
+    log('operation.failed', { kind: failure.kind });
+    if (failure.kind === 'cancelled') return;
     void vscode.window.showErrorMessage(`ForgePilot: ${message}`);
   };
   const command = (name: string, fn: (...args: unknown[]) => Promise<void>) => {
@@ -32,7 +35,7 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
       try { await fn(...args); } catch (error) { report(error); }
     }));
   };
-  const start = async (enableEditing = false, enableAutonomous = false) => {
+  const start = async (enableEditing = false, enableAutonomous = false, connectNow = false) => {
     if (!vscode.workspace.isTrusted) throw new ForgePilotError('Trust this workspace before starting ForgePilot.');
     if (closing) throw new ForgePilotError('ForgePilot is stopping. Wait for cleanup to finish.');
     if (starting) return starting;
@@ -44,20 +47,26 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
       const folder = folders.length === 1 ? folders[0] : await vscode.window.showWorkspaceFolderPick({ placeHolder: 'Authorize one workspace root for bounded tools' });
       if (!folder) return;
       const config = vscode.workspace.getConfiguration('forgepilot');
-      const candidate = new Bridge({
+      const candidate = new ResilientBridge({
         baseUrl: config.get<string>('baseUrl', 'http://localhost:8790'), agentName: config.get<string>('agentName', 'forge-coder'),
         turnTimeoutSeconds: config.get<number>('turnTimeoutSeconds', 180), root: folder.uri.fsPath,
         childPath: context.asAbsolutePath('dist/mcp-child.cjs'), proposals: enableEditing, autonomous: enableAutonomous, contextBudget: config.get<number>('contextBudget', 12000), toolIntervalMs: enableAutonomous ? config.get<number>('autonomousToolIntervalMs', 0) : 0, token: await context.secrets.get('trueforge.token'), log,
-      });
+      }, { enabled: config.get<boolean>('fallbackEnabled', false), agentName: config.get<string>('fallbackAgentName', ''), notify: message => { output.appendLine(`[recovery] ${message}`); void vscode.window.showInformationMessage(`ForgePilot: ${message}`); } });
       output.show(true);
       output.appendLine(`[starting ${enableAutonomous ? 'autonomous' : enableEditing ? 'proposal' : 'read-only'} session for ${folder.name}]`);
-      const id = await candidate.start();
-      bridge = candidate; editingEnabled = enableEditing; autonomousEnabled = enableAutonomous; authorizedRoot = folder.uri.fsPath;
-      output.appendLine(`[session ${id}; model ${candidate.modelName}; workspace ${folder.uri.fsPath}]`);
+      bridge = candidate;
+      try {
+        const id = await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'ForgePilot: connecting to TrueForge', cancellable: true }, async (_, token) => {
+          const subscription = token.onCancellationRequested(() => { void candidate.cancel().catch(report); });
+          try { return connectNow ? await candidate.start() : undefined; } finally { subscription.dispose(); }
+        });
+        editingEnabled = enableEditing; autonomousEnabled = enableAutonomous; authorizedRoot = folder.uri.fsPath;
+        output.appendLine(id ? `[session ${id}; model ${candidate.modelName}; workspace ${folder.uri.fsPath}]` : '[ready; session setup is included in the cancellable request]');
+      } catch (error) { if (bridge === candidate) bridge = undefined; await candidate.stop(); throw error; }
     })();
     try { await starting; } finally { starting = undefined; }
   };
-  command('forgepilot.start', async () => { await start(); });
+  command('forgepilot.start', async () => { await start(false, false, true); });
   command('forgepilot.ask', async (instruction) => {
     await start();
     if (!bridge) return;
@@ -127,13 +136,14 @@ export function activate(context: vscode.ExtensionContext): { editing: Editing; 
   });
   context.subscriptions.push(vscode.workspace.onDidChangeWorkspaceFolders(() => { void stop().catch(report); }));
   log('extension.activated');
-  return { editing: edits, autonomous };
+  return { editing: edits, autonomous, get recovery() { return bridge?.evidence ?? []; } };
 }
 
 async function stop(): Promise<void> {
   editing?.cancel(); autonomousController?.cancel();
   if (closing) return closing;
   closing = (async () => {
+    await bridge?.cancel();
     try { await starting; } catch { /* Startup performs its own rollback. */ }
     const selected = bridge;
     bridge = undefined;

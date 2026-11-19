@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import path from 'node:path';
-import type { Bridge } from './bridge';
+import type { AgentConnection } from './resilience';
 import { Workspace } from './workspace';
 import { PatchStore, captureSelection, hash, type Hunk, type Patch, type Proposal } from './patch';
 import { ForgePilotError } from './log';
@@ -18,7 +18,7 @@ export class Editing implements vscode.TreeDataProvider<Hunk>, vscode.TextDocume
   private busy = false;
   private generation = 0;
   private applying = false;
-  constructor(private readonly connect: () => Promise<{ bridge: Bridge; root: string }>, private readonly write: (text: string) => void, private readonly scheme = 'forgepilot-diff') {}
+  constructor(private readonly connect: () => Promise<{ bridge: AgentConnection; root: string }>, private readonly write: (text: string) => void, private readonly scheme = 'forgepilot-diff') {}
   get current(): Proposal | undefined { return this.store?.current; }
   getChildren(): Hunk[] { return this.current?.hunks ?? []; }
   getTreeItem(h: Hunk): vscode.TreeItem {

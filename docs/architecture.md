@@ -1,11 +1,12 @@
 # ForgePilot architecture
 
-The extension is a client of the existing saved TrueForge agent. `Bridge` owns one named session and a temporary authenticated companion connector. The companion exposes bounded repository capabilities over stateless MCP HTTP; TrueForge owns model execution, tool choice and iteration. No direct provider call, unrestricted shell, workspace write or approval tool is offered to the model.
+The extension is a client of the existing saved TrueForge agent. `ResilientBridge` selects a saved agent; `Bridge` owns one TrueForge session and a temporary authenticated companion connector. The companion exposes bounded repository capabilities over stateless MCP HTTP; TrueForge owns model execution, tool choice and iteration. No direct provider call, unrestricted shell, workspace write or approval tool is offered to the model.
 
 ```mermaid
 flowchart LR
   Developer --> VSCode
-  VSCode --> Bridge
+  VSCode --> Resilience[Bounded session recovery]
+  Resilience --> Bridge
   Bridge --> TrueForge
   TrueForge --> MCP[Authenticated companion MCP]
   MCP --> Workspace[Secure workspace reads]
@@ -34,8 +35,22 @@ For autonomous runs, context, range reads, search and proposal schemas are eager
 
 If editor application returns false, throws or produces unexpected content, only recognized applied portions with unchanged versions/content and valid disk state are candidates for restoration. Unknown/user-modified portions are preserved and reported for inspection. Undo failure or partial restoration is also reported. These are guarded editor operations, not an OS transaction, lock, or public version CAS. Concurrent edits after the final check remain a documented race; users should not edit affected documents during dispatch.
 
-Cancellation checks run around asynchronous event processing and invalidate both proposal stores and request generations. The SDK cancels the backend turn, not just the socket. If cancellation cannot be acknowledged, companion termination revokes local access. Explicit stop detaches only the owned connector and preserves session history. One client per saved agent is supported because TrueForge manifest updates have no conditional-write API.
+Cancellation checks run around asynchronous event processing and invalidate both proposal stores and request generations. The SDK cancels the backend turn, not just the socket. If cancellation cannot be acknowledged, companion termination revokes local access. Explicit stop detaches only the owned connector and preserves session history. The production editor uses SDK `CreateSessionAgent.spec` to snapshot a saved agent into an inline session, attaching its own connector without updating the shared saved manifest. Legacy standalone drivers retain named-session compatibility and should run sequentially because that older attachment API has no conditional update.
 
 Optional autonomous response pacing serializes MCP result delivery through a cancellable timer chain. It reduces request bursts for limited provider plans; it does not make or retry model calls. The server aborts pending pacing waits and tracked Git subprocesses during shutdown.
 
 Live drivers default to 0 ms, with an explicit test override. At 10,000 ms the previous chain imposed at least 250 seconds for 25 tool responses. TrueForge's cumulative input/output/cache/reasoning metrics are recorded separately from retrieval byte estimates. Actual native compaction ran during both OpenRouter Task B attempts at the initial 32,000-token trigger. Original metadata/operation conventions were subsequently lost or invented by the model, so the final agent uses a 64,000-input-token trigger and explicit operation enums/descriptions. That final tuning is not live-verified because OpenRouter exhausted its daily free quota. Registry/turn mutations are never blindly retried.
+
+## Phase 4 resilience
+
+`failure.ts` maps bounded SDK metadata and terminal error messages into typed categories. A `RequestFailure` retains its original cause for internal handling; public messages and metadata logs omit raw responses, headers, credentials and task/source text. HTTP 401/403, model configuration, 429/daily quotas, 502/503/504, networking and timeouts remain distinct from stream failures, patch validation, denied approval, cancellation and conflicts. The branded type remains recognizable across VS Code module bundles. Successful completion is still mandatory; unknown/incomplete outcomes fail closed.
+
+`ResilientBridge` coordinates at most two TrueForge-owned executions per request. Fallback is disabled by default and needs a distinct machine-scoped saved agent name. A recognized eligible failure closes the old bridge before a new isolated session is created. No saved provider or agent manifest is rewritten. The new bridge has a new connector token/name, source-event/call-ID maps and draft scope. The task and authorized selection/root are reused; primary drafts, approvals and model conversation are not.
+
+Each attempt uses a separate disposable proposal store. A successful terminal outcome is required before a fresh, independently revalidated proposal is adopted into the UI's store. Failed candidates are irreversibly cancelled before fallback. Batches use `BatchStore.fork()` to retain the authorized baseline callback but no proposal state. File application remains outside this coordinator, in `Editing`/`EditCoordinator` after all hunk decisions. Recovery neither repeats an application nor rolls back already accepted edits automatically.
+
+The state sequence is idle → primary setup/stream/approval → success, or failure → cancel/revoke → fallback setup/stream/approval → success/failure. Any user cancellation moves toward cancel/revoke and cannot switch models. There is no recursive transition. Developer denial takes precedence even if the SDK request submitting it fails, and failure cleanup cannot create a new generation timeout. A deadline during a model request may be eligible; a deadline while awaiting human input is local and cannot trigger fallback. Both-provider failure reports both sanitized categories. A subsequent manual request creates fresh execution state.
+
+Startup SDK operations receive abort signals; turns retain stream abort, backend cancellation and draft invalidation. Control-plane requests use a 10-second SDK timeout, backend cancellation five seconds, draft IPC five seconds, companion termination escalates after 2.5 seconds, and generation has a configurable 10–600-second deadline per attempt. Cleanup is awaited; an unacknowledged registry cleanup prevents fallback and closes local access. These are bounded individual operations, not a hard real-time overall SLA. No registry/turn/application mutation is blindly retried. No same-provider backoff policy was added; automatic fallback is the chosen recovery path.
+
+Progress/listeners are disposed in `finally`, busy flags reset on all exits, and session/model/connector/outcome/actual metrics are exposed as sanitized recovery evidence. The actual Task C host kept a 25ms timer running during provider errors and editing. This establishes event-loop responsiveness in that environment, not physical keyboard/mouse behavior or a guarantee of zero scheduling latency. Physical UI checks, Windows/macOS and competition recording remain pending.

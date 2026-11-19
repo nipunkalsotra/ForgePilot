@@ -1,13 +1,15 @@
 import { ForgePilotError } from './log';
+import { classifyFailure, RequestFailure } from './failure';
 
 /** Treat SDK types as an interoperability hint, not proof that the server succeeded. */
 export function requireSuccessfulCompletion(state: unknown): void {
-  if (state && typeof state === 'object' && 'status' in state && state.status === 'error' && 'message' in state && typeof state.message === 'string' && /\b429\b|quota|rate.?limit/i.test(state.message)) {
-    throw new ForgePilotError('TrueForge model request was rate-limited. Pending proposals are invalid; retry after the provider limit resets.');
+  if (state && typeof state === 'object' && 'status' in state && state.status === 'error') {
+    throw classifyFailure(state, 'provider');
   }
+  if (state && typeof state === 'object' && 'status' in state && state.status === 'cancelled') throw new RequestFailure('cancelled', 'local', state);
   if (!state || typeof state !== 'object' || !('status' in state) || state.status !== 'done'
     || !('requiredActions' in state) || !Array.isArray(state.requiredActions) || state.requiredActions.length !== 0) {
-    throw new ForgePilotError('TrueForge turn failed or did not complete successfully. Pending proposals are invalid.');
+    throw new RequestFailure('sdk_stream', 'local', state);
   }
   if ('output' in state && state.output !== null && state.output !== undefined) {
     const output = state.output;

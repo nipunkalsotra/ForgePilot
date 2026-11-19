@@ -2,7 +2,10 @@ import * as vscode from 'vscode';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { resilienceHostTests } from './resilience-host';
 import { batchHostTests } from './batch-host';
+import { taskCHost } from './taskc-host';
+import type { RecoveryTrace } from '../src/resilience';
 import { taskBHost } from './autonomous-host';
 import { autonomousLiveHost } from './autonomous-live-host';
 import type { Autonomous } from '../src/autonomous';
@@ -32,6 +35,7 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand('forgepilot.cancel');
   await vscode.commands.executeCommand('forgepilot.stop');
   console.log(`PASS: Correct ForgePilot bundle loaded, command-triggered activation, all ${contributed.length} palette contributions/registrations, autonomous invocation, idle cleanup.`);
+  if (process.env.FORGEPILOT_TASKC === '1') { await taskCHost(extension.exports as { editing: Editing; readonly recovery: RecoveryTrace[] }); return; }
   if (process.env.FORGEPILOT_AUTONOMOUS_LIVE === '1') { await autonomousLiveHost((extension.exports as { autonomous: Autonomous }).autonomous); return; }
   if (process.env.FORGEPILOT_PHASE3_FLASK === '1') {
     try { await taskBHost((extension.exports as { autonomous: Autonomous }).autonomous); }
@@ -43,7 +47,7 @@ export async function run(): Promise<void> {
     finally { await vscode.commands.executeCommand('forgepilot.stop'); }
     return;
   }
-  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); await batchHostTests(); return; }
+  if (process.env.FORGEPILOT_EXTENSION_LIVE !== '1') { await editingHostTests(); await batchHostTests(); await resilienceHostTests(); return; }
   const client = new TrueForge({ baseUrl: 'http://localhost:8790', maxRetries: 0, timeoutInSeconds: 10 });
   const oldSessions = new Set((await client.sessions.list()).data.map(s => s.id));
   const connectorsBefore = (await client.mcpServers.list()).data.map(s => s.name).sort();
