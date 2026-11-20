@@ -1,4 +1,158 @@
-# ForgePilot — TrueForge agent with reviewed edits and token budgets
+![ForgePilot animated overview with real VS Code screenshots](docs/assets/readme/hero.gif)
+
+# ForgePilot
+
+### The right context. Every change reviewed.
+
+**A VS Code coding agent whose entire agent loop runs on TrueForge.**
+
+Describe the change. Let the agent discover relevant code. Review native diffs, decide each hunk, apply accepted changes and keep a guarded path back.
+
+[![CI](https://github.com/nipunkalsotra/ForgePilot/actions/workflows/check.yml/badge.svg)](https://github.com/nipunkalsotra/ForgePilot/actions/workflows/check.yml)
+![TrueForge](https://img.shields.io/badge/TrueForge-0.185.1-782E47)
+![SDK](https://img.shields.io/badge/SDK-0.185.0-782E47)
+![Node](https://img.shields.io/badge/Node-22_%7C_24-167E72)
+[![MIT](https://img.shields.io/badge/License-MIT-167E72)](LICENSE)
+
+**[Watch the extension](#watch-the-real-extension)** · **[Explore the screenshots](#inside-forgepilot)** · **[Architecture](#architecture)** · **[Run locally](#run-it-locally)** · **[Evidence](#verification-and-evidence)**
+
+[Static overview](docs/assets/readme/hero-poster.webp) · The banner is a labelled montage of genuine captures; recordings below show actual application interactions.
+
+---
+
+## Watch the real extension
+
+### 01 · Review every hunk
+
+[![Real screen recording: native ForgePilot hunk review with Accept Hunk and Reject Hunk controls](docs/assets/readme/native-review.gif)](docs/assets/readme/native-review.mp4)
+
+**[Watch the full-resolution recording →](docs/assets/readme/native-review.mp4)** · [Still image](docs/assets/readme/native-review.webp)
+
+Actual VS Code and genuine TrueForge inference, captured on 20 November 2026. The excerpt shows native review controls and explicit decisions through the visible interface. It is a review excerpt, not a new Task B generation.
+
+### 02 · Verify the behavior
+
+[![Real terminal recording: 59 Flask CLI tests, command help and masked JSON from the historical-patch replay](docs/assets/readme/terminal-verification.gif)](docs/assets/readme/terminal-verification.mp4)
+
+**[Watch the full-resolution recording →](docs/assets/readme/terminal-verification.mp4)**
+
+Real executed Flask output: CLI tests pass, `flask --help` lists `config`, sensitive values are masked and ordinary values remain intact. This is the **exact archived Task B patch replayed on pinned Flask 3.1.3**, clearly separated from fresh inference.
+
+### 03 · Stay in control when a provider fails
+
+[![Real Task C recording: a disposable closed-port provider fails clearly; the editor responds and Git status remains clean](docs/assets/readme/safe-stop.gif)](docs/assets/readme/safe-stop.mp4)
+
+**[Watch the full-resolution recording →](docs/assets/readme/safe-stop.mp4)**
+
+A disposable closed-port provider produces a sanitized error. The editor stays responsive, cancellation revokes pending authority, and a real Git check confirms an unchanged checkout. This recording demonstrates safe failure; it does not claim a successful fallback.
+
+## Inside ForgePilot
+
+### Native review, inside the editor
+
+![Actual native diff with independent Accept Hunk and Reject Hunk controls](docs/assets/readme/native-review.webp)
+
+Proposals stay separate from application. Every hunk starts pending, and only accepted hunks reach the editor buffer. Guarded undo refuses unsafe restoration after unrelated changes.
+
+### Context the developer can inspect
+
+![Actual ForgePilot Agent Panel beside its ranked context inspector: chosen files, reasons, scores and an estimated 6512-of-12000-token retrieval](docs/assets/readme/context-inspector.webp)
+
+The inspector exposes ranking, file evidence, selection reasons and estimated budget. This screenshot comes from a genuine fresh retrieval whose request was later cancelled at a model confirmation question. It is not a successful Task B completion claim.
+
+### Output whose behavior is visible
+
+![Actual masked JSON: sensitive key values are asterisks; COUNT 42, FLAG true and ORDINARY visible-normal are preserved](docs/assets/readme/configuration-output.webp)
+
+Selected keys from the real configuration command’s output on the archived-patch replay. The implementation, tests and documentation were historically generated through TrueForge over **six separately approved batches and 22 native-host hunk decisions**. [Inspect the provenance and reproduce the replay](docs/evidence/task-b/README.md).
+
+## From instruction to reviewed code
+
+| Step | What ForgePilot does | What stays under developer control |
+| --- | --- | --- |
+| **01 · Describe** | Accepts a high-level request or a selected inline region | The requested scope and authorized workspace |
+| **02 · Discover** | Ranks implementation, test and documentation context; refines with outlines and ranges | Visible context reasons, hashes and estimated budgets |
+| **03 · Draft** | Retains exact proposal drafts and validates the complete batch | Staging permission, separate from application |
+| **04 · Review** | Opens native file/hunk diffs | Independent accept/reject decisions |
+| **05 · Verify** | Supports developer terminals and separately approved typed MCP commands | Every command approval; saved-content verification |
+| **06 · Restore** | Checks file/document identity before guarded undo | A safe path back from accepted changes |
+
+## Architecture
+
+![ForgePilot architecture: VS Code panel, TrueForge SDK and session, authenticated MCP companion, native review, accepted-only apply and guarded undo](docs/assets/readme/architecture.svg)
+
+**TrueForge owns inference and agent orchestration.** The extension snapshots a restricted saved agent into an isolated session, attaches its authenticated local MCP companion and renders real streamed SDK events. It adds no separate editor-side model loop.
+
+Command grants, staging approval, hunk decisions and accepted-only application are independent boundaries. Repository inspection and drafts never grant source-write authority.
+
+[Architecture and security boundaries](docs/architecture.md) · [Agent Panel / terminal verification](docs/agent-panel-terminal-verification.md) · [Credential-free agent example](config/forge-coder.agent.json)
+
+## Run it locally
+
+Use Node **22.14+** (22 or 24 recommended), desktop VS Code **1.101+**, npm and local TrueForge **0.185.1**. Agent terminal execution requires supported Linux Bubblewrap isolation.
+
+```sh
+git clone https://github.com/nipunkalsotra/ForgePilot.git
+cd ForgePilot
+npm ci
+npm run check
+npm run package:extension
+code --install-extension ./artifacts/forgepilot.vsix --force
+```
+
+Start the harness in another terminal:
+
+```sh
+OUTBOUND_URL_ALLOWED_HOSTS='["127.0.0.1"]' npx @truefoundry/trueforge@0.185.1 --port 8790
+```
+
+Open **http://localhost:8790**, configure the provider in **Settings → Models**, then create the restricted saved agent:
+
+```sh
+npm run setup:agent
+```
+
+Reload VS Code after installation, open and trust a suitable local workspace, then run **ForgePilot: Autonomous Agent** (`Ctrl+Alt+A`) or **ForgePilot: Edit Selection** (`Ctrl+Alt+I`). Model credentials stay in TrueForge. Keep the dedicated saved agent free of other connectors/skills and preserve its documented disabled capabilities.
+
+For development, press **F5 → ForgePilot: Extension Development Host** and use ForgePilot in the new host window. [Full setup, configuration and operations reference](#engineering-reference).
+
+## Verification and evidence
+
+| Evidence | Supported result | Source |
+| --- | --- | --- |
+| **140/140 · Node 22 and 24** | Preserved deterministic checks; zero skipped tests | [Final engineering verification](docs/evidence/final-engineering/verification.json) |
+| **26 editor commands** | Agent Panel, context, native review, application, cancellation and undo | [Panel / terminal verification](docs/agent-panel-terminal-verification.md) |
+| **Historical genuine Task B** | Multi-turn, review-assisted acceptance; six batches and 22 hunk decisions | [Acceptance report](docs/phase-3-final-acceptance.md) |
+| **59 CLI / 113 combined Flask tests** | Exact accepted-patch replay with help and masking checks | [Replay archive](docs/evidence/task-b/README.md) |
+| **Ranked retrieval benchmark** | Large Python 3,778 → 2,724; nested mixed 3,881 → 2,825 estimated transport tokens | [Benchmark data](docs/evidence/final-engineering/context-benchmark.json) |
+
+The transport figures are **estimates, not provider billing savings**. The default 12,000-token retrieval budget is an estimate, not provider quota. The Agent Panel distinguishes **ACTUAL**, **ESTIMATED**, **CONFIGURED** and **UNKNOWN** values.
+
+```sh
+npm run check
+npm run benchmark:context
+```
+
+Live verification uses real configured models and can incur normal provider charges. Capacity remains external. The original engineering results are preserved in the linked reports.
+
+## Current boundaries
+
+- **Fresh Task B repeatability:** a fresh recorded attempt reported provider unavailability. The successful historical chain and today’s exact offline replay remain labelled separately.
+- **GUI evidence:** genuine new Task A and isolated Task C recordings exist. The current recording does not prove active mid-flight GUI cancellation or a healthy current fallback transition.
+- **Terminal scope:** Linux Bubblewrap is required. There is no unsandboxed fallback; Windows/macOS agent command execution is unsupported.
+- **Verification scope:** commands test saved disk content. Executing unapplied candidate drafts is unsupported.
+- **Accounting and confidentiality:** provider quota and reliable monetary totals remain unknown. Approved repository tests can emit unknown secrets; filtering is bounded.
+- **Model questions:** opening the inspector while a confirmation was pending cancelled that question and request in one genuine attempt. Answer pending questions before changing the view.
+
+With another month: isolated candidate-test overlays, repeated first-request benchmarks on unseen repositories, stronger confidential-output filtering, portable command isolation and broader accessibility testing.
+
+## Engineering reference
+
+<details>
+<summary><b>Full technical setup, safety limits, configuration and dated acceptance notes</b></summary>
+
+The detailed engineering baseline follows. Its dated phase notes remain separate from the newer recordings and visual evidence above.
+
 
 For local installation use the **CLI wrapper** (`code --install-extension ./artifacts/forgepilot.vsix --force`, or `/opt/visual-studio-code/bin/code` on this machine). `VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code` identifies the Electron executable for test-host launching; it is not the installation CLI. Host tests compare both loaded bundle hashes against the current build, so an older installed version cannot pass merely by exposing the same commands.
 
@@ -272,3 +426,14 @@ Starting point: **from scratch**, on repository commit `e77080b` (initial README
 ## Current acceptance and manual handoff
 
 [Phase 5 verification](docs/phase-5-final-verification.md) preserves its dated tests, genuine sessions and offline replay. The [post-Phase-5 panel/terminal report](docs/agent-panel-terminal-verification.md) records the new implementation and distinguishes deterministic, installed-host and genuine-model evidence. Phase 6 has not been started. Physical GUI clicks, minimum-version VS Code and Windows/macOS remain unverified; agent commands refuse unsupported sandbox platforms. Provider capacity is external and no remaining quota is promised.
+
+
+</details>
+
+## Built by CodeCrafters
+
+**Nipun Kalsotra** ([@nipunkalsotra](https://github.com/nipunkalsotra)) and **Shreshtha** ([@Shreshtha280407](https://github.com/Shreshtha280407)) · **BITS Pilani**.
+
+Built from scratch from baseline `e77080b` for the TrueFoundry Forge-a-thon, Techfest IIT Bombay. TrueFoundry provides TrueForge, Microsoft provides VS Code, and Pallets provides the Flask benchmark. Codex assistance is declared in the engineering reports and write-up.
+
+[MIT license](LICENSE) · [Flask attribution](docs/evidence/task-b/FLASK-LICENSE.txt) · [Visual provenance](docs/assets/readme/provenance.json)

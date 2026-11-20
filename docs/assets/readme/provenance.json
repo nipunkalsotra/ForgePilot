@@ -1,0 +1,117 @@
+{
+  "generated": "2026-11-20",
+  "source_video_sha256": "e0357eab09dda693dd4b27270a5a165a853092c90486d7b11a4174c463f4b975",
+  "engineering_commit": "cddd6db9f4421243c9bb63801d1133cb45dee6cc",
+  "illustrations": {
+    "hero.svg": "Conceptual brand/workflow illustration; not simulated application proof. Reduced-motion poster provided.",
+    "architecture.svg": "Vector architecture diagram based on implemented approval boundaries."
+  },
+  "recorded_animation": {
+    "native-review.gif": {
+      "source_video_range_seconds": [
+        39,
+        48
+      ],
+      "fps": 8,
+      "crop": {
+        "x": 308,
+        "y": 32,
+        "width": 1612,
+        "height": 860
+      },
+      "description": "Genuine Task A native hunk review excerpt, through actual visible application controls. No model streaming or approval is synthesized."
+    }
+  },
+  "stills": {
+    "native-review.webp": {
+      "source": "a-take-hunk-31.png",
+      "crop": [
+        0,
+        25,
+        1908,
+        920
+      ],
+      "sha256": "a2620c9ab0b3fb4e9694eb6be33e2290f8dcf1a5f3379ab7f45dbf51b330e3a6"
+    },
+    "context-inspector.webp": {
+      "source": "b-fresh-context.png",
+      "crop": null,
+      "sha256": "b8dd69837a04bb37ae9eb5859bd41ceca22c383e90d41b677fc46dbe39e8fb43"
+    },
+    "configuration-output.webp": {
+      "source": "b-replay-json.png",
+      "crop": [
+        300,
+        670,
+        1908,
+        1008
+      ],
+      "sha256": "c2c5eec3de3c34dd1cf528f53dbac82e68a25f4725a9f355d68e15e78585e1b2"
+    },
+    "safe-failure.webp": {
+      "source": "c-error.png",
+      "crop": null,
+      "sha256": "e1af7af7b922b6bb6028dac685d55dfa132197b653c9efdc163892318a1ddb90"
+    },
+    "review-poster.webp": {
+      "source": "a-take-native-diff.png",
+      "crop": [
+        305,
+        32,
+        1908,
+        920
+      ],
+      "sha256": "a0138699b4068b24129b5991d2dd0d71122b957cef124767c66781116b9d1f4f"
+    }
+  },
+  "task_b": "Context inspector source request was cancelled; configuration output is exact historical-patch offline replay, not fresh inference.",
+  "licenses": "Original illustrations and documentation: repository MIT. Flask source material: BSD, preserved in docs/evidence/task-b/FLASK-LICENSE.txt.",
+  "visual_refresh": "2026-11-20: restored missing main-branch media; plain Markdown GIF embeds and three real screen recordings.",
+  "recording_excerpts": {
+    "native-review": {
+      "source": "app-task-a-window-verified.mp4",
+      "start_seconds": 36,
+      "duration_seconds": 12,
+      "audio_streams": 0,
+      "new_model_run": true,
+      "note": "Review excerpt from a genuine model-backed run."
+    },
+    "terminal-verification": {
+      "source": "app-task-b-offline-replay.mp4",
+      "start_seconds": 38,
+      "duration_seconds": 20,
+      "audio_streams": 0,
+      "new_model_run": false,
+      "note": "Offline historical-patch verification."
+    },
+    "safe-stop": {
+      "source": "app-task-c-window-final.mp4",
+      "start_seconds": 4.5,
+      "duration_seconds": 15,
+      "audio_streams": 0,
+      "new_model_run": false,
+      "note": "Isolated closed-port safe failure; no healthy fallback claimed."
+    }
+  },
+  "hero.gif": "Cinematic montage of genuine captured stills. It is not a continuous model run; each scene is labelled.",
+  "hero_scene_crops": {
+    "native-review.webp": [
+      620,
+      0,
+      1908,
+      830
+    ],
+    "context-inspector.webp": [
+      875,
+      65,
+      1920,
+      663
+    ],
+    "configuration-output.webp": [
+      0,
+      0,
+      760,
+      338
+    ]
+  }
+}
