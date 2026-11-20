@@ -1,8 +1,8 @@
-name: Phase 1 checks
+name: ForgePilot checks
 on: [push, pull_request]
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         node: [22, 24]
@@ -12,5 +12,23 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
+      # Command-tool tests execute actual read-only Bubblewrap processes; never
+      # weaken the sandbox or skip security tests merely to make CI green.
+      - name: Install terminal sandbox prerequisites
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y bubblewrap apparmor-profiles apparmor-utils nodejs npm
+          # Ubuntu 24.04 AppArmor mediates creation of unprivileged user namespaces.
+          # Load the distribution-provided narrowly scoped bwrap profile, without
+          # changing kernel.apparmor_restrict_unprivileged_userns globally.
+          if [ -e /sys/kernel/security/apparmor/profiles ] && [ -f /usr/share/apparmor/extra-profiles/bwrap-userns-restrict ]; then
+            sudo install -m 0644 /usr/share/apparmor/extra-profiles/bwrap-userns-restrict /etc/apparmor.d/bwrap-userns-restrict
+            sudo apparmor_parser -r /etc/apparmor.d/bwrap-userns-restrict
+          fi
+          command -v bwrap
+          /usr/bin/node --version
+          sandbox_mounts=(--ro-bind /usr /usr --ro-bind /bin /bin --ro-bind /lib /lib)
+          if [ -e /lib64 ]; then sandbox_mounts+=(--ro-bind /lib64 /lib64); fi
+          bwrap --unshare-all --die-with-parent --new-session --cap-drop ALL "${sandbox_mounts[@]}" --proc /proc --dev /dev -- /usr/bin/true
       - run: npm ci
       - run: npm run check

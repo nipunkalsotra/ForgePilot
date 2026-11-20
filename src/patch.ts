@@ -5,11 +5,14 @@ import { ForgePilotError } from './log';
 
 export const patchSchema = z.strictObject({
   path: z.string().min(1).max(1024), baseHash: z.string().regex(/^[a-f0-9]{64}$/),
-  edits: z.array(z.strictObject({ oldText: z.string().min(1).max(LIMITS.fileBytes), newText: z.string().max(LIMITS.fileBytes) })).min(1).max(64),
+  edits: z.array(z.strictObject({ oldText: z.string().min(1).max(LIMITS.fileBytes).describe('Exact non-empty original text, unique in the target. For an insertion, use an existing unique anchor and include it unchanged in newText; never use an empty oldText.'), newText: z.string().max(LIMITS.fileBytes) })).min(1).max(64),
 });
 export type Patch = z.infer<typeof patchSchema>;
 export const hash = (text: string): string => createHash('sha256').update(text).digest('hex');
 const fail = (message: string): never => { throw new ForgePilotError(message); };
+export class PatchValidationError extends ForgePilotError {
+  constructor(readonly code: 'BASE_HASH_MISMATCH' | 'ANCHOR_NOT_FOUND' | 'ANCHOR_NOT_UNIQUE' | 'OVERLAPPING_EDITS', message: string, readonly editIndex?: number) { super(message); }
+}
 export function parseJson(text: string): unknown {
   if (Buffer.byteLength(text) > 256 * 1024) fail('Model output exceeds the patch budget.');
   try { return JSON.parse(text); } catch { return fail('Malformed model output: expected structured patch JSON.'); }
@@ -26,15 +29,16 @@ export function captureSelection(input: Snapshot): Snapshot {
   return { ...input };
 }
 export function renderPatch(original: string, patch: Patch, start = 0, end = original.length): string {
-  if (hash(original) !== patch.baseHash) fail('Patch base hash does not match the original document.');
-  const edits = patch.edits.map(edit => {
+  if (hash(original) !== patch.baseHash) throw new PatchValidationError('BASE_HASH_MISMATCH', 'Patch base hash does not match the original document.');
+  const edits = patch.edits.map((edit, index) => {
     const selected = original.slice(start, end);
     const offset = selected.indexOf(edit.oldText);
-    if (offset < 0 || selected.indexOf(edit.oldText, offset + 1) !== -1) fail('Patch text must match uniquely inside the selection.');
+    if (offset < 0) throw new PatchValidationError('ANCHOR_NOT_FOUND', 'Patch text must match uniquely inside the selection: original anchor not found.', index);
+    if (selected.indexOf(edit.oldText, offset + 1) !== -1) throw new PatchValidationError('ANCHOR_NOT_UNIQUE', 'Patch text must match uniquely inside the selection: anchor has multiple matches.', index);
     const at = start + offset;
     return { ...edit, start: at, end: at + edit.oldText.length };
   }).sort((a, b) => a.start - b.start);
-  for (let i = 1; i < edits.length; i++) if (edits[i]!.start < edits[i - 1]!.end) fail('Overlapping edits are forbidden.');
+  for (let i = 1; i < edits.length; i++) if (edits[i]!.start < edits[i - 1]!.end) throw new PatchValidationError('OVERLAPPING_EDITS', 'Overlapping edits are forbidden.');
   let result = original;
   for (const edit of edits.reverse()) result = result.slice(0, edit.start) + edit.newText + result.slice(edit.end);
   if (Buffer.byteLength(result) > LIMITS.fileBytes || result.includes('\0')) fail('Proposed content exceeds the text budget.');
@@ -72,7 +76,7 @@ export interface Proposal {
 export class PatchStore {
   private cancelled = false;
   private proposal?: Proposal;
-  constructor(readonly workspace: Workspace, readonly snapshot: Snapshot) { captureSelection(snapshot); }
+  constructor(readonly workspace: Workspace, readonly snapshot: Snapshot) { this.snapshot = captureSelection(snapshot); }
   get current(): Proposal | undefined { return this.proposal ? structuredClone(this.proposal) : undefined; }
   cancel(): void { this.cancelled = true; if (this.proposal?.status === 'staged') this.proposal.status = 'cancelled'; }
   async stage(value: unknown, toolApproved: boolean): Promise<Proposal> {

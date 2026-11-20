@@ -1,0 +1,38 @@
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font: var(--vscode-font-size)/1.5 var(--vscode-font-family); height: 100vh; display: flex; flex-direction: column; }
+button, textarea { font: inherit; }
+button { color: var(--vscode-button-secondaryForeground); background: var(--vscode-button-secondaryBackground); border: 1px solid transparent; border-radius: 3px; cursor: pointer; padding: 3px 7px; }
+button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+button:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 2px; }
+button:disabled { opacity: .5; cursor: default; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 12px 10px 6px; }
+.badge { color: var(--vscode-descriptionForeground); font-size: .7em; letter-spacing: .1em; margin-left: 7px; }
+.identity { padding: 0 10px; overflow-wrap: anywhere; font-size: .9em; }
+.identity small { display: block; color: var(--vscode-descriptionForeground); font-size: .8em; }
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--vscode-widget-border, transparent); }
+#state { flex: 1; min-width: 65px; font-size: .9em; text-transform: capitalize; }
+#state[data-state="running"]::before, #state[data-state="awaiting approval"]::before { content: '● '; color: var(--vscode-progressBar-background); }
+main { flex: 1; min-height: 0; overflow-y: auto; padding: 10px; scroll-behavior: auto; }
+h2 { font-size: 1.15em; font-weight: 500; } h3 { font-size: .85em; text-transform: uppercase; letter-spacing: .05em; color: var(--vscode-descriptionForeground); margin: 14px 0 6px; }
+#welcome p, #proposal-note { color: var(--vscode-descriptionForeground); }
+.message { margin: 0 0 12px; padding: 8px 9px; border: 1px solid var(--vscode-widget-border, transparent); border-radius: 5px; background: var(--vscode-editor-background); }
+.message.user { border-left: 2px solid var(--vscode-focusBorder); margin-left: 12px; }
+.message small { display: block; color: var(--vscode-descriptionForeground); margin-bottom: 4px; font-size: .8em; }
+.message div { white-space: pre-wrap; overflow-wrap: anywhere; }
+details { padding: 5px 0; border-bottom: 1px solid var(--vscode-widget-border, transparent); font-size: .9em; }
+summary { cursor: pointer; overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font: .9em/1.5 var(--vscode-editor-font-family); max-height: 240px; overflow: auto; }
+.file { display: block; background: transparent; color: var(--vscode-textLink-foreground); text-align: left; overflow-wrap: anywhere; width: 100%; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+#error { color: var(--vscode-errorForeground); white-space: pre-wrap; overflow-wrap: anywhere; }
+form { padding: 9px 10px 12px; border-top: 1px solid var(--vscode-widget-border, transparent); }
+label { display: block; font-size: .85em; margin-bottom: 4px; color: var(--vscode-descriptionForeground); }
+textarea { resize: vertical; width: 100%; min-height: 64px; max-height: 240px; border: 1px solid var(--vscode-input-border, transparent); border-radius: 3px; padding: 7px; color: var(--vscode-input-foreground); background: var(--vscode-input-background); }
+.compose-actions { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 5px; }
+.compose-actions small { color: var(--vscode-descriptionForeground); font-size: .8em; }
+#send { background: var(--vscode-button-background); color: var(--vscode-button-foreground); padding-inline: 14px; }
+[hidden] { display: none !important; }
+@media (max-width: 220px) { .compose-actions small { display: none; } header { flex-wrap: wrap; } }
+
+#usage { white-space: pre-wrap; font-size: 11px; padding: 8px 12px; color: var(--vscode-descriptionForeground); border-bottom: 1px solid var(--vscode-panel-border); }

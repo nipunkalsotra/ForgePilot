@@ -1,0 +1,27 @@
+{
+  "sessionId": "01m7tbt27ddh9yq4282rhcs2yx",
+  "turnId": "01m7tbt2819533ttyase48rm6z",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "persistedTerminalEvent": {
+    "type": "turn.done",
+    "id": "01m7tbt4ftv8mcdjmmnca2z7vv",
+    "createdAt": "2026-11-19T16:56:34.042Z",
+    "state": {
+      "status": "error",
+      "message": "[Model Error] Cannot connect to API:",
+      "completedAt": "2026-11-19T16:56:34.042Z",
+      "metrics": {
+        "totalInputTokens": 0,
+        "totalOutputTokens": 0,
+        "totalTokens": 0
+      }
+    },
+    "threadId": null
+  },
+  "result": "BLOCKED",
+  "category": "network",
+  "observedUiCategoryBeforeFix": "sdk_stream",
+  "fix": "Added exact provider Cannot connect to API wording to failure classification; deterministic regression only, no additional inference.",
+  "furtherInference": "Stopped; no fresh inline, three-file, terminal or official Task B requests after health failure.",
+  "remainingProviderQuota": "UNKNOWN"
+}

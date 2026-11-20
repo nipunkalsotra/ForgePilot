@@ -1,0 +1,105 @@
+{
+  "archiveOnly": true,
+  "newAgentRun": false,
+  "commit": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+  "source": "Exact snapshots from six previously approved and applied TrueForge batches; no hand-written Flask repair",
+  "patchSHA256": "e4b549bc955fb604c9f22169ae90dc0998fb8e55274f70cfafdfb483b919272e",
+  "patchExactAgainstSnapshots": "PASS",
+  "approvedChain": [
+    {
+      "artifact": "final-taskb-paced.json",
+      "sessions": [
+        "01m7se73xvn31zsj2sdwh36wyc"
+      ],
+      "proposalId": "372e7976-7872-4f87-aeec-b633ed0ac86d",
+      "paths": [
+        "src/flask/cli.py",
+        "tests/test_cli.py",
+        "docs/cli.rst"
+      ],
+      "hunkDecisions": 7
+    },
+    {
+      "artifact": "final-taskb-correction.json",
+      "sessions": [
+        "01m7sek8a4c940q68y2k2nge8e"
+      ],
+      "proposalId": "27bf6035-4023-4a4a-950c-399e5ca57b79",
+      "paths": [
+        "src/flask/cli.py",
+        "tests/test_cli.py"
+      ],
+      "hunkDecisions": 4
+    },
+    {
+      "artifact": "final-taskb-correction2.json",
+      "sessions": [
+        "01m7seyzd8ymg1cgw49wbtgyd9"
+      ],
+      "proposalId": "c00f08be-3128-492f-ac83-957390e4b2b4",
+      "paths": [
+        "tests/test_cli.py",
+        "src/flask/cli.py"
+      ],
+      "hunkDecisions": 4
+    },
+    {
+      "artifact": "final-taskb-final.json",
+      "sessions": [
+        "01m7sf9tkqr22tkn4wtmbe40cc"
+      ],
+      "proposalId": "1f685e22-782c-49f8-bc0a-2a33847addab",
+      "paths": [
+        "tests/test_cli.py"
+      ],
+      "hunkDecisions": 2
+    },
+    {
+      "artifact": "final-taskb-high.json",
+      "sessions": [
+        "01m7sg585par5c7kd4q7cptcwb"
+      ],
+      "proposalId": "39451a80-f5ff-4658-b9d2-9ed840ef323b",
+      "paths": [
+        "tests/test_cli.py"
+      ],
+      "hunkDecisions": 2
+    },
+    {
+      "artifact": "final-taskb-success.json",
+      "sessions": [
+        "01m7sgcvvb0ysapthbdbnvd123"
+      ],
+      "proposalId": "6674209c-d69f-41ab-af79-59c5bef2a131",
+      "paths": [
+        "tests/test_cli.py",
+        "docs/cli.rst"
+      ],
+      "hunkDecisions": 3
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/cli.rst",
+      "baselineSHA256": "e8e5e9b220a5159e9c9c8b413de499aa5a51cd0ca487681e2352bbdf6f9b0cda",
+      "acceptedSHA256": "f35ce13d1dfe6b6f4ed4a7e18d0805dbcc75d4d3dc0e248adca3da13dcd06733"
+    },
+    {
+      "path": "src/flask/cli.py",
+      "baselineSHA256": "3df87bdbe07196fa07d101c20ce7351ef5c6ecaab95deb5fdf3ccdcf690d4879",
+      "acceptedSHA256": "df333996fce761ca05e2a49810632e67c844caa7c4e2df6280b1571c11a9fb1b"
+    },
+    {
+      "path": "tests/test_cli.py",
+      "baselineSHA256": "bc9b456bcd5c8698f4a809ca9c5a595b8be47ac5f8f057442d6c78498b70e3f8",
+      "acceptedSHA256": "ffe1664711c02f21f2dbfe06423ea1fab747e05e43285bafc6cbd5a740b8dea0"
+    }
+  ],
+  "originalTemporaryCheckoutPresent": false,
+  "recordedAcceptance": {
+    "cliTests": 59,
+    "cliHelpersConfigTests": 113,
+    "maskedJSON": "PASS",
+    "helpRegistration": "PASS"
+  }
+}

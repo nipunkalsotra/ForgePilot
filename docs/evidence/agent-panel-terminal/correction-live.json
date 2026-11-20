@@ -1,0 +1,129 @@
+{
+  "kind": "genuine installed panel failure-feedback correction; automated acceptance approval/hunk driver",
+  "physicalClicks": "NOT TESTED",
+  "commands": [
+    {
+      "requestId": "c0b4ddc7-10e5-4943-a28f-2a7e5ae071aa",
+      "callId": "call_17733606419461390236",
+      "sourceEventId": "01m7t003ee4bvya4dw6nxk9fm4",
+      "approvalEventId": "01m7t0058bvk9xf4dxgxggpt02",
+      "command": "node /usr/lib/node_modules/npm/bin/npm-cli.js --offline --ignore-scripts run test (cwd: ., timeout: 10s)"
+    }
+  ],
+  "stages": [
+    {
+      "paths": [
+        "calculator.cjs"
+      ],
+      "decision": "allow staging only"
+    }
+  ],
+  "commandResult": {
+    "kind": "forgepilot.command",
+    "category": "npm_test",
+    "summary": "node /usr/lib/node_modules/npm/bin/npm-cli.js --offline --ignore-scripts run test (cwd: ., timeout: 10s)",
+    "exitCode": 1,
+    "termination": "exited",
+    "durationMs": 320,
+    "stdout": "",
+    "stderr": "npm notice run test\nnpm notice run node verify.cjs\nnode:internal/assert/utils:146\n  throw error;\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n1 !== 2\n\n    at Object.<anonymous> (/home/nipun/pip_tmp/forgepilot-vscode-workspace-wFzI86/verify.cjs:1:103)\n    at Module._compile (node:internal/modules/cjs/loader:1956:14)\n    at Object..js (node:internal/modules/cjs/loader:2096:10)\n    at Module.load (node:internal/modules/cjs/loader:1678:32)\n    at Module._load (node:internal/modules/cjs/loader:1470:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 1,\n  expected: 2,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.10.0\n",
+    "truncated": false,
+    "timedOut": false,
+    "cancelled": false,
+    "callId": "call_17733606419461390236",
+    "approvalEventId": "01m7t0058bvk9xf4dxgxggpt02"
+  },
+  "sessionId": "01m7t0003e0db3eqwj14sm68fz",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "panelState": "completed",
+  "tools": [
+    {
+      "id": "call_14732530650581619272",
+      "name": "context_query",
+      "phase": "completed",
+      "detail": "Repository context: ~455/12000 tokens. Inspect Context for selected files and reasons."
+    },
+    {
+      "id": "call_17733606419461390236",
+      "name": "run_command",
+      "phase": "failed",
+      "detail": "Exit: 1 \u00b7 exited\nstdout:\n\nstderr:\nnpm notice run test\nnpm notice run node verify.cjs\nnode:internal/assert/utils:146\n  throw error;\n  ^\n\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n1 !== 2\n\n    at Object.<anonymous> (/home/nipun/pip_tmp/forgepilot-vscode-workspace-wFzI86/verify.cjs:1:103)\n    at Module._compile (node:internal/modules/cjs/loader:1956:14)\n    at Object..js (node:internal/modules/cjs/loader:2096:10)\n    at Module.load (node:internal/modules/cjs/loader:1678:32)\n    at Module._load (node:internal/modules/cjs/loader:1470:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19)\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:33:47 {\n  generatedMessage: true,\n  code: 'ERR_ASSERTION',\n  actual: 1,\n  expected: 2,\n  operator: 'strictEqual',\n  diff: 'simple'\n}\n\nNode.js v26.10.0\n"
+    },
+    {
+      "id": "call_337576167245703518",
+      "name": "draft_file",
+      "phase": "completed",
+      "detail": "217 response bytes"
+    },
+    {
+      "id": "call_7579910852518954217",
+      "name": "check_drafts",
+      "phase": "completed",
+      "detail": "124 response bytes"
+    },
+    {
+      "id": "call_11123390936131868174",
+      "name": "propose_drafts",
+      "phase": "completed",
+      "detail": "389 response bytes"
+    }
+  ],
+  "developerVerification": {
+    "exitCode": 0,
+    "stdout": "fixture validation passed\n",
+    "stderr": ""
+  },
+  "applied": "explicit automated native hunk acceptance + guarded coordinator",
+  "guardedUndo": "PASS",
+  "history": [
+    {
+      "type": "user.tool_approval",
+      "id": "01m7t00a9803b5xz6xr9gpz97y",
+      "callId": "call_11123390936131868174",
+      "approval": {
+        "status": "allow"
+      }
+    },
+    {
+      "type": "tool.approval_required",
+      "id": "01m7t00a8dq9nex1zcjt2k96zq",
+      "refs": [
+        {
+          "id": "call_11123390936131868174",
+          "sourceEventId": "01m7t008whtym92dra7b5an78y"
+        }
+      ]
+    },
+    {
+      "type": "user.tool_approval",
+      "id": "01m7t0059dn9tf3fmne562hd8f",
+      "callId": "call_17733606419461390236",
+      "approval": {
+        "status": "allow"
+      }
+    },
+    {
+      "type": "tool.approval_required",
+      "id": "01m7t0058bvk9xf4dxgxggpt02",
+      "refs": [
+        {
+          "id": "call_17733606419461390236",
+          "sourceEventId": "01m7t003ee4bvya4dw6nxk9fm4"
+        }
+      ]
+    }
+  ],
+  "result": "PASS",
+  "buildIdentity": {
+    "vsixSHA256": "515908330bb5162495d6994795a39ef1682fbf534b11b05895dfd4dc86a889b0",
+    "bundles": {
+      "dist/extension.cjs": "0a3026c52667fd200d2976b324bf327cfc4e9653e38bc17b57297da94d00c3b6",
+      "dist/mcp-child.cjs": "a0f590a0605f35b58d09e654c9fd3e5eee5fbd0e72c56931993da2342f084d7b",
+      "dist/THIRD_PARTY_NOTICES.txt": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "media/agent.js": "ee3cd8ab2fae7fc65b46730d27ad6ee7a519c3ae8411359aeedcc11d81f460e3",
+      "media/agent.css": "3daece25efe9b605c4592a62a9682855acabbe3f9f0759b0d46ae97a66342271",
+      "media/forgepilot.svg": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3"
+    },
+    "differenceFromFinal": "Final build additionally clears the proposal after successful undo and labels native-progress cancellation as cancelled. Terminal MCP, approval, Bridge and stream implementations are unchanged."
+  }
+}

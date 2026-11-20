@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "localLinksChecked": 54,
+  "brokenLinks": [],
+  "filesScanned": 131,
+  "vsixEntriesScanned": 12,
+  "credentialPatternMatches": [],
+  "head": "5dec056e5781af4d52c599c5befb7fa5a32be879",
+  "main": "b9da781a627a7870ef19b2a74d93e1c7377f428b",
+  "stagedFiles": [],
+  "originalConfigFilesAndLockfileUnchanged": true,
+  "limitation": "Pattern scan and covered threat-model tests do not prove universal absence of secrets or security defects."
+}

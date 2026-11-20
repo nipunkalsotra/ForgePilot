@@ -1,0 +1,148 @@
+{
+  "verdict": "CONDITIONAL",
+  "deterministicEngineering": "PASS",
+  "liveRepeatReadiness": "CONDITIONAL: provider network unavailable",
+  "node22": {
+    "version": "22.23.5",
+    "tests": 140,
+    "pass": 140,
+    "fail": 0,
+    "skipped": 0,
+    "build": "PASS",
+    "lint": "PASS",
+    "npmCi": "PASS"
+  },
+  "node24": {
+    "version": "24.22.3",
+    "tests": 140,
+    "pass": 140,
+    "fail": 0,
+    "skipped": 0,
+    "build": "PASS",
+    "lint": "PASS",
+    "npmCi": "PASS"
+  },
+  "originalTestsRetained": 115,
+  "addedTests": 25,
+  "installedHost": {
+    "result": "PASS",
+    "commands": 26,
+    "view": "forgepilot.agentView",
+    "realRendererCspHandshake": "PASS",
+    "nativeReviewApplyUndo": "PASS",
+    "resourceUsage": "PASS",
+    "model": "labelled SDK wire fixtures; no inference"
+  },
+  "terminal": {
+    "sandbox": "real Linux Bubblewrap",
+    "approvalDenialReplay": "PASS",
+    "networkReadOnlyEnvIsolation": "PASS",
+    "timeoutDescendantsCleanup": "PASS",
+    "candidateExecution": "UNSUPPORTED"
+  },
+  "vsixSha256": "0e9e460c905c8b4d2851e4bf407caea69ea66750f710402aaaf849e9b82128a9",
+  "builtPackagedInstalled": "PASS: six files plus manifest contributions match",
+  "audit": {
+    "knownVulnerabilities": 0,
+    "high": 0,
+    "critical": 0
+  },
+  "live": {
+    "command": "npm run test:live",
+    "result": "BLOCKED",
+    "observedExitCode": 1,
+    "sessionId": "01m7tbt27ddh9yq4282rhcs2yx",
+    "category": "network",
+    "message": "[Model Error] Cannot connect to API:",
+    "inputTokens": 0,
+    "outputTokens": 0,
+    "totalTokens": 0,
+    "sourceUnchanged": "PASS",
+    "connectorCleanup": "PASS",
+    "subsequentInference": "NOT RUN after health failure",
+    "testEditingLive": "NOT RUN: prerequisite health failure; no additional inference authorized by gate",
+    "freshThreeFile": "NOT RUN: prerequisite health failure",
+    "freshTaskB": "NOT ATTEMPTED: prerequisite health failure"
+  },
+  "historicalTaskB": {
+    "unchanged": true,
+    "kind": "six-batch multi-turn acceptance; 22 hunk decisions",
+    "offlineReplay": "PASS: 59 CLI / 113 combined tests; masking/help/unchanged config",
+    "acceptedPatchSha256": "e4b549bc955fb604c9f22169ae90dc0998fb8e55274f70cfafdfb483b919272e"
+  },
+  "savedAgentManifests": "PASS: latest after-check equals before-check; no production settings changed",
+  "contextBenchmark": {
+    "baselineCommit": "9c8df0e0321d09a128587409e5ac59c8191a2ec6",
+    "baselineSourceMatch": true,
+    "baselineSha256": "dc08d35fb2301aff9b239a4120801ba3bab6a8f0d20f68c111fa8d6f6d911014",
+    "file": "context-benchmark.json",
+    "actualProviderSavings": "UNKNOWN; transport estimates only"
+  },
+  "cleanSourceArchive": "PENDING",
+  "ci": {
+    "startingIntegratedHead": "8716e3f7aa3ae05ca95216e5e3414e0b5f78cdb9",
+    "startingRun": 44555981916,
+    "startingResult": "success",
+    "deliveredHeadResult": "PASS: both Node 22/24 jobs, real Bubblewrap, all 140 tests and zero skips",
+    "firstDelivery": {
+      "commit": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
+      "run": 44580215765,
+      "result": "success",
+      "node22Job": 135758519265,
+      "node24Job": 135758520114,
+      "realSandboxPrerequisites": "PASS",
+      "skippedTests": 0
+    },
+    "finalCodeRun": {
+      "commit": "5dfbd0e1e49d220a81da5019882c3c4a1b5cfe93",
+      "run": 44582108260,
+      "result": "success",
+      "node22Job": 135765198769,
+      "node24Job": 135765198110,
+      "sourceCommit": "770328703f55ab20f05d7ce3e46d0ce6876332cc"
+    }
+  },
+  "git": {
+    "branch": "feat/phase-3-autonomous-agent",
+    "pr": 1,
+    "prState": "open; unmerged",
+    "main": "unchanged",
+    "delivery": "Pushed to existing feature branch; final receipt-only commit records completed CI. No runtime/test changes after the verified code.",
+    "implementationCommits": [
+      "e14c5739548f60a447fe590e06d81e6021597311",
+      "e8a5213a2e17c858ce9ea091de3295bcb1a75ac3",
+      "770328703f55ab20f05d7ce3e46d0ce6876332cc"
+    ],
+    "firstDeliveryHead": "53b16b7b324e806bf5d6e451c2ec3aaf0a52e1b9",
+    "filesChanged": 53,
+    "verifiedDeliveryHead": "5dfbd0e1e49d220a81da5019882c3c4a1b5cfe93",
+    "workingTreeAtVerifiedDelivery": "clean"
+  },
+  "operatorSteps": [
+    "Restore legitimate provider connectivity; rerun bounded fresh live gates before claiming repeat readiness or attempting Task B.",
+    "Physical GUI walkthrough and actual video recording.",
+    "Final 1\u20133-page competition PDF with real timestamps.",
+    "Repository visibility and signed-out artifact link verification.",
+    "Portal submission before 20 November 2026 23:59 IST."
+  ],
+  "notPerformed": [
+    "demo",
+    "video",
+    "screenshots",
+    "PDF creation",
+    "repository visibility change",
+    "Marketplace publication",
+    "portal submission",
+    "router installation or connection"
+  ],
+  "cleanSource": {
+    "commit": "770328703f55ab20f05d7ce3e46d0ce6876332cc",
+    "method": "fresh git archive, explicitly versioned Node 24 npm ci and npm run check",
+    "pass": 140,
+    "fail": 0,
+    "skipped": 0,
+    "bundleAndMediaHashesMatch": true,
+    "earlierGate": "e14c573 archive had 139/140 because renderer assets were not staged; fixed in e8a5213, full clean gate repeated.",
+    "version": "24.22.3"
+  }
+}

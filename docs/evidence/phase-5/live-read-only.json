@@ -1,0 +1,32 @@
+{
+  "timestamp": "2026-11-19T11:24:02.973Z",
+  "trueforgeVersion": "0.185.1",
+  "sdkVersion": "0.185.0",
+  "checks": {
+    "session": "PASS",
+    "streaming": "PASS",
+    "mcpExecution": "PASS",
+    "persistedToolHistory": "PASS",
+    "cleanup": "PASS",
+    "workspaceUnchanged": "PASS"
+  },
+  "sessionId": "01m7srs9b3xwjmg9x31s2yzpk2",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "textDeltaCount": 4,
+  "persistedToolNames": [
+    "read_file",
+    "list_files"
+  ],
+  "toolExecutions": [
+    "list_files",
+    "read_file"
+  ],
+  "workspaceHashesBefore": {
+    ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+    "src/inspection.txt": "27788225eabde17c44235cedb453014d1a558457d7e4ef5e5d6b33fa06a9fee3"
+  },
+  "workspaceHashesAfter": {
+    ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+    "src/inspection.txt": "27788225eabde17c44235cedb453014d1a558457d7e4ef5e5d6b33fa06a9fee3"
+  }
+}

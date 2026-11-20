@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-11-19T11:28:19.846Z",
+  "approvalDriver": "automated verification; not manual UI interaction",
+  "session": "01m7ss146dr222h1c4f1b7eqw4",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "approvalEvents": [
+    {
+      "type": "turn.done",
+      "id": "01m7ss18we9r31v5qd32qqpqv7"
+    },
+    {
+      "type": "model.message",
+      "id": "01m7ss170z476n5n2csq18hr4p"
+    },
+    {
+      "type": "tool.response",
+      "id": "01m7ss170tnmtz8nvcetzvjzvk",
+      "callId": "call_15775640952428962326"
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ss16ztvn76nj0rg0qbmcc0"
+    },
+    {
+      "type": "user.tool_approval",
+      "id": "01m7ss16z7p3yabkwcmqes2ys7"
+    },
+    {
+      "type": "turn.update",
+      "id": "01m7ss16y3s7d3vqjrj85xcgyn"
+    },
+    {
+      "type": "tool.approval_required",
+      "id": "01m7ss16y1jvhsg2y4cfq9nymx"
+    },
+    {
+      "type": "model.message",
+      "id": "01m7ss147wvq47xpxbrsmt1fep"
+    },
+    {
+      "type": "mcp.initialize",
+      "id": "01m7ss147svfw9njcskrh0ny47"
+    },
+    {
+      "type": "turn.created",
+      "id": "01m7ss14760vhex9pdy3h7ttjf"
+    }
+  ],
+  "hunks": [
+    {
+      "id": "babfc6fb-36a8-436d-bccf-9fab6bfb1ba8",
+      "start": 0,
+      "end": 24,
+      "newText": "export const first = 10;\n",
+      "line": 0,
+      "decision": "pending"
+    },
+    {
+      "id": "9298dc56-7019-4403-b931-632762585a77",
+      "start": 37,
+      "end": 62,
+      "newText": "export const second = 20;\n",
+      "line": 2,
+      "decision": "pending"
+    }
+  ],
+  "unchangedHash": "ba12d11e98d3f364012e88551db5a2ffc4c4b6fa65c6d31d26e58677a8ce50aa",
+  "cancelAfterStaging": "PASS",
+  "cancelWaitingForApproval": "PASS",
+  "cancelDuringStreaming": "PASS",
+  "result": "PASS"
+}

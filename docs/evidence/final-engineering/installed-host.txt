@@ -1,0 +1,21 @@
+
+> forgepilot@0.1.0 test:extension
+> npm run build && node --import tsx scripts/verify-extension.ts
+
+
+> forgepilot@0.1.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+[1004941:1119/232020.921754:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1631] vaInitialize failed: unknown libva error
+[main 2026-11-19T17:50:21.172Z] update#setState disabled
+[main 2026-11-19T17:50:21.173Z] update#ctor - updates are disabled by the environment
+Started local extension host with pid 1005512.
+Loading development extension at /home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0
+Settings Sync: Account status changed from uninitialized to unavailable
+PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 26 palette contributions/registrations, autonomous invocation, idle cleanup.
+PASS: Actual Agent WebviewView registration/resolution, message-route prompt → SDK → real MCP failed command → fresh retained-draft staging → native diff → hunk decision → guarded apply/undo, context access, stale/malformed message refusal. Approvals automated; no physical GUI clicks.
+PASS: Actual VS Code APIs: selection, diff, mixed hunks, accept/reject all, apply, exact undo, stale/user-change protection, cancellation and model failure. Agent is a labelled fixture here.
+PASS: Actual multi-file VS Code diffs, file/hunk mixed decisions, coordinated apply, reviewed creation, exact batch undo, and subsequent-user-change protection. Agent fixture, not live model evidence.
+PASS: Native VS Code resilience fixture: responsive timers, failed staged generation isolated, fresh approval/diff, approved apply, exact undo, next request, cancelled staging. SDK-wire fixture, not provider evidence.
+[main 2026-11-19T17:50:34.940Z] Extension host with pid 1005512 exited with code: 0, signal: unknown.
+Exit code:   0

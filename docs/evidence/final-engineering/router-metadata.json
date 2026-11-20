@@ -1,0 +1,24 @@
+{
+  "models": [
+    "google-gemini/gemini-3-1-flash-lite",
+    "google-gemini/gemini-3-1-pro-preview",
+    "google-gemini/gemini-3-5-flash",
+    "google-gemini/gemini-3-5-flash-lite",
+    "google-gemini/gemini-3-6-flash",
+    "google-gemini/gemini-3-7-flash",
+    "google-gemini/gemini-3-8-flash",
+    "google-gemini/gemini-4-argon",
+    "google-gemini/gemini-4-carbon",
+    "google-gemini/gemini-flash-latest",
+    "google-gemini/gemini-flash-lite-latest",
+    "google-gemini/gemma-4-26b-a4b-it",
+    "google-gemini/gemma-4-31b-it",
+    "openrouter/nemotron-3-ultra-free"
+  ],
+  "agents": [
+    "forge-coder",
+    "forge-coder-openrouter"
+  ],
+  "routerLabelledCandidates": [],
+  "status": "No router connection or inference attempted. Names alone do not prove gateway configuration. Credentials and provider headers not inspected."
+}

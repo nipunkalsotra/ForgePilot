@@ -1,0 +1,40 @@
+
+> forgepilot@0.1.0 prepackage:extension
+> node --input-type=module -e "import {mkdir} from 'node:fs/promises'; await mkdir('artifacts',{recursive:true})"
+
+
+> forgepilot@0.1.0 package:extension
+> npx --yes @vscode/vsce@3.7.1 package --no-dependencies --githubBranch feat/phase-3-autonomous-agent --out artifacts/forgepilot.vsix
+
+Executing prepublish script 'npm run vscode:prepublish'...
+
+> forgepilot@0.1.0 vscode:prepublish
+> npm run build
+
+
+> forgepilot@0.1.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+ INFO  Files included in the VSIX:
+forgepilot.vsix
+├─ [Content_Types].xml 
+├─ extension.vsixmanifest 
+└─ extension/
+   ├─ LICENSE.txt [1.04 KB]
+   ├─ package.json [14.4 KB]
+   ├─ readme.md 
+   ├─ config/
+   │  ├─ forge-coder-gemini-high.agent.json [2.36 KB]
+   │  ├─ forge-coder-openrouter.agent.json [3.19 KB]
+   │  ├─ forge-coder.agent.json [2.26 KB]
+   │  └─ trueforge.env.example [0.46 KB]
+   ├─ dist/
+   │  ├─ THIRD_PARTY_NOTICES.txt [13.69 KB]
+   │  ├─ extension.cjs [1.52 MB]
+   │  └─ mcp-child.cjs [1.48 MB]
+   └─ media/
+      ├─ agent.css [3.98 KB]
+      ├─ agent.js [6.32 KB]
+      └─ forgepilot.svg [0.21 KB]
+
+ DONE  Packaged: artifacts/forgepilot.vsix (15 files, 507.74 KB)

@@ -1,0 +1,202 @@
+{
+  "timestamp": "2026-11-19T09:46:24.881Z",
+  "commit": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+  "scenarios": {
+    "A-invalid-key": {
+      "result": "PASS",
+      "elapsedMs": 684,
+      "eventLoopTicks": 26,
+      "failure": "credentials",
+      "trace": [
+        {
+          "agent": "forgepilot-c-auth-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk6hc9ybcz441a9k0ddm86",
+          "model": "forgepilot-c-auth-1a8d6ddad9/test-model",
+          "connector": "forgepilot-ca88fd9c85bd443b",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "credentials"
+        }
+      ],
+      "failurePresentation": "Production inline command error handler invoked; physical notification rendering not manually inspected",
+      "workspaceUnchanged": true
+    },
+    "B-unreachable": {
+      "result": "PASS",
+      "elapsedMs": 477,
+      "eventLoopTicks": 18,
+      "failure": "network",
+      "trace": [
+        {
+          "agent": "forgepilot-c-net-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk6jg2p5fgrs1266mh2hd9",
+          "model": "forgepilot-c-net-1a8d6ddad9/test-model",
+          "connector": "forgepilot-6041ef0c80e24436",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "network"
+        }
+      ],
+      "failurePresentation": "Production inline command error handler invoked; physical notification rendering not manually inspected",
+      "workspaceUnchanged": true
+    },
+    "D-both-unavailable": {
+      "result": "PASS",
+      "elapsedMs": 964,
+      "eventLoopTicks": 38,
+      "failure": "network",
+      "trace": [
+        {
+          "agent": "forgepilot-c-auth-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk6k592g0y73hm0ahecvc5",
+          "model": "forgepilot-c-auth-1a8d6ddad9/test-model",
+          "connector": "forgepilot-8b76a831ac306896",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "credentials"
+        },
+        {
+          "agent": "forgepilot-c-net-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk6km895vd8qrnzzr4s957",
+          "model": "forgepilot-c-net-1a8d6ddad9/test-model",
+          "connector": "forgepilot-493db9a065f3bf97",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "network"
+        }
+      ],
+      "failurePresentation": "Production inline command error handler invoked; physical notification rendering not manually inspected",
+      "workspaceUnchanged": true
+    },
+    "C-automatic-fallback": {
+      "result": "PASS",
+      "trace": [
+        {
+          "agent": "forgepilot-c-auth-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk6m8rtm0qqyh2t1fkq3e9",
+          "model": "forgepilot-c-auth-1a8d6ddad9/test-model",
+          "connector": "forgepilot-65053231c8203a19",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "credentials"
+        },
+        {
+          "agent": "forge-coder",
+          "outcome": "succeeded",
+          "sessionId": "01m7sk6mrhhgtmc8z9fn6x7r8w",
+          "model": "google-gemini/gemini-3-1-flash-lite",
+          "connector": "forgepilot-041f5b430649a593",
+          "metrics": {
+            "totalInputTokens": 5036,
+            "totalOutputTokens": 920,
+            "totalTokens": 5956,
+            "totalCacheReadTokens": 0,
+            "totalReasoningTokens": 555
+          }
+        }
+      ],
+      "approvals": 1,
+      "hunkCount": 2,
+      "nativeDiffTabs": 1,
+      "workspaceUnchanged": true
+    },
+    "E-cancel-staged": {
+      "result": "PASS",
+      "trace": [
+        {
+          "agent": "forgepilot-c-auth-1a8d6ddad9",
+          "outcome": "failed",
+          "sessionId": "01m7sk72r094638q43ry2ybxpv",
+          "model": "forgepilot-c-auth-1a8d6ddad9/test-model",
+          "connector": "forgepilot-eef42c2c6070bfae",
+          "metrics": {
+            "totalInputTokens": 0,
+            "totalOutputTokens": 0,
+            "totalTokens": 0
+          },
+          "failure": "credentials"
+        },
+        {
+          "agent": "forge-coder",
+          "outcome": "succeeded",
+          "sessionId": "01m7sk736ztj9m0jkb4p47swjw",
+          "model": "google-gemini/gemini-3-1-flash-lite",
+          "connector": "forgepilot-25b3f4ee8502ee53",
+          "metrics": {
+            "totalInputTokens": 4895,
+            "totalOutputTokens": 797,
+            "totalTokens": 5692,
+            "totalCacheReadTokens": 0,
+            "totalReasoningTokens": 448
+          }
+        }
+      ]
+    }
+  },
+  "hunkDecisions": [
+    {
+      "id": "1ac08e33-7634-425d-9445-4bbf6a63e9ee",
+      "decision": "accepted",
+      "driver": "explicit automated VS Code command"
+    },
+    {
+      "id": "024955c3-6e22-4008-a64e-8819955b25ed",
+      "decision": "accepted",
+      "driver": "explicit automated VS Code command"
+    }
+  ],
+  "behavior": {
+    "0": false,
+    "1": true,
+    "off": false,
+    "OFF": false,
+    "n": false,
+    "N": false,
+    "": false,
+    "false": false,
+    "FALSE": false,
+    "FaLsE": false,
+    "no": false,
+    "NO": false,
+    "true": true,
+    "yes": true,
+    "on": true,
+    "random": true
+  },
+  "pytest": {
+    "exitCode": 0,
+    "stdout": "...................................                                      [100%]\n35 passed in 0.20s\n",
+    "stderr": ""
+  },
+  "undo": "PASS",
+  "result": "PASS",
+  "eventLoop": {
+    "ticks": 1304,
+    "maximumObservedGapMs": 101,
+    "measurement": "25ms extension-host timer, no physical UI clicks"
+  },
+  "cleanup": "PASS",
+  "finalGitStatus": "",
+  "provenance": "Retained genuine prior acceptance; not repeated Phase 5 inference",
+  "sourceSHA256": "cc91d3cce5af5f0801052931ea4f8011daece93d9fb6de30deec62f9c9c31cc5"
+}

@@ -1,0 +1,233 @@
+{
+  "kind": "genuine saved-agent inference through installed Agent Panel controller",
+  "physicalClicks": "NOT TESTED",
+  "attempts": [
+    {
+      "decision": "approve",
+      "sessionId": "01m7szpbear3wy1qjkectcgjky",
+      "model": "google-gemini/gemini-3-1-flash-lite",
+      "state": "completed",
+      "error": "",
+      "tools": [
+        {
+          "id": "call_3398555073199057426",
+          "name": "context_query",
+          "phase": "completed",
+          "detail": "Repository context: ~124/12000 tokens. Inspect Context for selected files and reasons."
+        },
+        {
+          "id": "call_13399492493891964455",
+          "name": "run_command",
+          "phase": "completed",
+          "detail": "Exit: 0 \u00b7 exited\nstdout:\n?? inspection.txt\n?? panel-inspection.txt\n\nstderr:\n"
+        }
+      ],
+      "history": [
+        {
+          "type": "tool.response",
+          "id": "01m7szpfwd7dbx0ss3p2e75w5x",
+          "callId": "call_13399492493891964455",
+          "result": {
+            "kind": "forgepilot.command",
+            "category": "git_status",
+            "summary": "git --no-optional-locks --no-pager -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c core.attributesFile=/dev/null status --short --untracked-files=normal (cwd: ., timeout: 10s)",
+            "exitCode": 0,
+            "termination": "exited",
+            "durationMs": 7,
+            "stdout": "?? inspection.txt\n?? panel-inspection.txt\n",
+            "stderr": "",
+            "truncated": false,
+            "timedOut": false,
+            "cancelled": false,
+            "callId": "call_13399492493891964455",
+            "approvalEventId": "01m7szpfvaseqmd7s9c8nykeps"
+          }
+        },
+        {
+          "type": "user.tool_approval",
+          "id": "01m7szpfvw3nc0n81wj42cbq70",
+          "callId": "call_13399492493891964455",
+          "approval": {
+            "status": "allow"
+          }
+        },
+        {
+          "type": "tool.approval_required",
+          "id": "01m7szpfvaseqmd7s9c8nykeps",
+          "refs": [
+            {
+              "id": "call_13399492493891964455",
+              "sourceEventId": "01m7szpegq6p3kjrfmrrvqbe40"
+            }
+          ]
+        }
+      ],
+      "sourceCall": {
+        "id": "call_13399492493891964455",
+        "function": "run_command",
+        "arguments": {
+          "timeoutSeconds": 10,
+          "operation": "git_status"
+        },
+        "toolInfo": {
+          "type": "mcp",
+          "name": "run_command",
+          "serverId": "forgepilot-34da36908a6fb383",
+          "serverName": "forgepilot-34da36908a6fb383"
+        }
+      },
+      "terminalStatuses": [
+        "done"
+      ]
+    },
+    {
+      "decision": "deny",
+      "sessionId": "01m7szphjy38yc9245wgyxmsan",
+      "model": "google-gemini/gemini-3-1-flash-lite",
+      "state": "completed",
+      "error": "",
+      "tools": [
+        {
+          "id": "call_3382645897166928398",
+          "name": "context_query",
+          "phase": "completed",
+          "detail": "Repository context: ~128/12000 tokens. Inspect Context for selected files and reasons."
+        },
+        {
+          "id": "call_7770636601026586566",
+          "name": "run_command",
+          "phase": "rejected",
+          "detail": "Developer denied this command. No execution was authorized."
+        }
+      ],
+      "history": [
+        {
+          "type": "user.tool_approval",
+          "id": "01m7szqpjec4nvtcs9b2kbxx2k",
+          "callId": "call_7770636601026586566",
+          "approval": {
+            "status": "deny",
+            "reason": "Developer denied command execution. No command was executed."
+          }
+        },
+        {
+          "type": "tool.approval_required",
+          "id": "01m7szqphw55qr21a7gydqzveb",
+          "refs": [
+            {
+              "id": "call_7770636601026586566",
+              "sourceEventId": "01m7szq9sx3tc0nk8cf54kdyyg"
+            }
+          ]
+        }
+      ],
+      "sourceCall": {
+        "id": "call_7770636601026586566",
+        "function": "run_command",
+        "arguments": {
+          "operation": "git_status",
+          "timeoutSeconds": 10
+        },
+        "toolInfo": {
+          "type": "mcp",
+          "name": "run_command",
+          "serverId": "forgepilot-b86976a1ee838918",
+          "serverName": "forgepilot-b86976a1ee838918"
+        }
+      },
+      "terminalStatuses": [
+        "done"
+      ]
+    },
+    {
+      "decision": "cancel",
+      "sessionId": "01m7szqwsd3t4473swp6f3ad4r",
+      "model": "google-gemini/gemini-3-1-flash-lite",
+      "state": "cancelled",
+      "error": "",
+      "tools": [
+        {
+          "id": "call_8387834284461982149",
+          "name": "context_query",
+          "phase": "completed",
+          "detail": "Repository context: ~125/12000 tokens. Inspect Context for selected files and reasons."
+        },
+        {
+          "id": "call_13378583209034077759",
+          "name": "run_command",
+          "phase": "cancelled",
+          "detail": "git --no-optional-locks --no-pager -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c core.attributesFile=/dev/null status --short --untracked-files=normal (cwd: ., timeout: 10s)"
+        }
+      ],
+      "history": [
+        {
+          "type": "tool.approval_required",
+          "id": "01m7szr6f2ahp0yyk0cmjxhbr5",
+          "refs": [
+            {
+              "id": "call_13378583209034077759",
+              "sourceEventId": "01m7szr232bc2gs7nba9fh8w7f"
+            }
+          ]
+        }
+      ],
+      "sourceCall": {
+        "id": "call_13378583209034077759",
+        "function": "run_command",
+        "arguments": {
+          "operation": "git_status",
+          "timeoutSeconds": 10
+        },
+        "toolInfo": {
+          "type": "mcp",
+          "name": "run_command",
+          "serverId": "forgepilot-6dca9af2b07eb6bd",
+          "serverName": "forgepilot-6dca9af2b07eb6bd"
+        }
+      },
+      "terminalStatuses": [
+        "cancelled"
+      ]
+    }
+  ],
+  "approvals": [
+    {
+      "decision": "approve",
+      "requestId": "e0a5ce45-9044-4ea7-8f9e-7d8d2f5f6d73",
+      "callId": "call_13399492493891964455",
+      "sourceEventId": "01m7szpegq6p3kjrfmrrvqbe40",
+      "approvalEventId": "01m7szpfvaseqmd7s9c8nykeps",
+      "command": "git --no-optional-locks --no-pager -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c core.attributesFile=/dev/null status --short --untracked-files=normal (cwd: ., timeout: 10s)"
+    },
+    {
+      "decision": "deny",
+      "requestId": "92f84c56-f18a-4ecc-82f1-aa51af3c4cdc",
+      "callId": "call_7770636601026586566",
+      "sourceEventId": "01m7szq9sx3tc0nk8cf54kdyyg",
+      "approvalEventId": "01m7szqphw55qr21a7gydqzveb",
+      "command": "git --no-optional-locks --no-pager -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c core.attributesFile=/dev/null status --short --untracked-files=normal (cwd: ., timeout: 10s)"
+    },
+    {
+      "decision": "cancel",
+      "requestId": "d11e0e4b-339a-479d-8bbc-b3dc5c50123c",
+      "callId": "call_13378583209034077759",
+      "sourceEventId": "01m7szr232bc2gs7nba9fh8w7f",
+      "approvalEventId": "01m7szr6f2ahp0yyk0cmjxhbr5",
+      "command": "git --no-optional-locks --no-pager -c core.fsmonitor=false -c core.hooksPath=/dev/null -c core.pager=cat -c core.attributesFile=/dev/null status --short --untracked-files=normal (cwd: ., timeout: 10s)"
+    }
+  ],
+  "result": "PASS",
+  "connectorCleanup": "PASS",
+  "buildIdentity": {
+    "vsixSHA256": "515908330bb5162495d6994795a39ef1682fbf534b11b05895dfd4dc86a889b0",
+    "bundles": {
+      "dist/extension.cjs": "0a3026c52667fd200d2976b324bf327cfc4e9653e38bc17b57297da94d00c3b6",
+      "dist/mcp-child.cjs": "a0f590a0605f35b58d09e654c9fd3e5eee5fbd0e72c56931993da2342f084d7b",
+      "dist/THIRD_PARTY_NOTICES.txt": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd",
+      "media/agent.js": "ee3cd8ab2fae7fc65b46730d27ad6ee7a519c3ae8411359aeedcc11d81f460e3",
+      "media/agent.css": "3daece25efe9b605c4592a62a9682855acabbe3f9f0759b0d46ae97a66342271",
+      "media/forgepilot.svg": "e1d80896b1867d2e309911edc9cf7bde06d0dd581326bfa61ca7c99c40efe4e3"
+    },
+    "differenceFromFinal": "Final build additionally clears the proposal after successful undo and labels native-progress cancellation as cancelled. Terminal MCP, approval, Bridge and stream implementations are unchanged."
+  }
+}

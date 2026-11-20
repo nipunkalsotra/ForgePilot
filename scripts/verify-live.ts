@@ -31,7 +31,7 @@ const report: Record<string, unknown> = { timestamp: new Date().toISOString(), t
 const checks: Record<string, string> = {};
 report.checks = checks;
 const log = jsonLogger(line => process.stderr.write(`${line}\n`));
-const bridge = new Bridge({ baseUrl: process.env.TRUEFORGE_BASE_URL ?? 'http://localhost:8790', agentName: process.env.TRUEFORGE_AGENT_NAME ?? 'forge-coder',
+const bridge = new Bridge({ isolated: true, baseUrl: process.env.TRUEFORGE_BASE_URL ?? 'http://localhost:8790', agentName: process.env.TRUEFORGE_AGENT_NAME ?? 'forge-coder',
   token: process.env.TRUEFORGE_TOKEN, root, childPath: path.resolve('dist/mcp-child.cjs'),
   turnTimeoutSeconds: 120, log: (event, fields) => {
     log(event, fields);
@@ -54,7 +54,7 @@ try {
     });
   assert.ok(deltas > 0, 'No real assistant text deltas received');
   checks.streaming = 'PASS';
-  report.textDeltaCount = deltas;
+  report.textDeltaCount = deltas; report.metrics = bridge.lastTurnMetrics ?? 'UNKNOWN';
   checks.mcpExecution = 'FAIL';
   assert.ok(toolExecutions.includes('list_files') && toolExecutions.includes('read_file'), 'Both discovery and read must execute on our server');
   assert.ok(response.includes(marker), 'Assistant must return the unpredictable marker read from disk');
@@ -79,6 +79,7 @@ try {
   report.error = publicError(error);
   process.stderr.write(`\nLIVE CHECK FAILED: ${publicError(error)}\n`);
 } finally {
+  report.metrics ??= bridge.lastTurnMetrics ?? 'UNKNOWN';
   try { await bridge.stop(); checks.cleanup = 'PASS'; } catch (error) { failed = true; checks.cleanup = 'FAIL'; report.cleanupError = publicError(error); }
   checks.workspaceUnchanged = JSON.stringify(await snapshot(root)) === JSON.stringify(before) ? 'PASS' : 'FAIL';
   if (checks.workspaceUnchanged !== 'PASS') failed = true;

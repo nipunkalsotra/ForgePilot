@@ -1,0 +1,173 @@
+v24.22.3
+
+> forgepilot@0.1.0 check
+> npm run build && npm run lint && npm test
+
+
+> forgepilot@0.1.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+
+> forgepilot@0.1.0 lint
+> eslint . --max-warnings 0
+
+
+> forgepilot@0.1.0 pretest
+> npm run build
+
+
+> forgepilot@0.1.0 build
+> tsc --noEmit && node scripts/build.mjs
+
+
+> forgepilot@0.1.0 test
+> node --import tsx --test --test-timeout=15000 tests/*.test.ts
+
+✔ SDK approval: exact persisted source, genuine approval input then staging; hunk review is separate (701.819675ms)
+✔ SDK retained draft extension correlates combined original edits with fresh final staging permission (502.003282ms)
+✔ retained draft SDK protocol requires exact approval, terminal success and an unchanged final payload (1789.773881ms)
+✔ cancellation during draft IPC setup prevents inference and rejects overlapping turns (423.749209ms)
+✔ SDK approval: rejection submits deny and never executes tool or stages (460.755563ms)
+✔ SDK approval: malformed model tool arguments and model errors preserve original (798.676719ms)
+✔ SDK approval: cancel waiting for human approval ignores delayed human answer (351.399695ms)
+✔ SDK approval: cancel after allow ignores delayed tool result (319.764877ms)
+✔ unsuccessful completion after staged patch always invalidates proposal (1464.926865ms)
+✔ failure during approval or after model output cannot become a proposal (647.341837ms)
+✔ autonomous SDK contract correlates deferred batch approval and terminal success (278.050407ms)
+✔ autonomous generation failure and rejected approval cannot leave an applicable batch (515.007259ms)
+✔ autonomous cancellation after allow ignores delayed batch tool results (258.686558ms)
+✔ answering a genuine SDK question never grants batch staging or hunk approval (270.753396ms)
+✔ approval source-event mismatch is rejected before any human approval or staging (460.143702ms)
+✔ autonomous cancellation while human approval is pending ignores a delayed allow (206.532465ms)
+✔ batch staging is no-write, independent and requires terminal success before review (66.540329ms)
+✔ coordinated multi-file application and exact undo preserve unrelated user edits (54.466122ms)
+✔ conflict or missing target blocks entire batch before any application (80.839175ms)
+✔ partial editor failure restores only safe modifications and reports unsafe portions (44.932545ms)
+✔ new files need explicit creation state, approval and guarded undo (15.426728ms)
+✔ invalid, rejected, failed or cancelled batches cannot later apply (35.416019ms)
+✔ partial undo is reported and subsequent retry cannot overwrite changes (20.738145ms)
+✔ creation undo and rollback verify deletion even when the editor reports success (40.08886ms)
+✔ SDK contract: named session, real SSE consumption and removal of only owned registration (587.933812ms)
+✔ SDK contract: failed registration preserves the original actionable error and stops companion (397.462675ms)
+✔ SDK contract: unsafe agent rejected before any MCP process or agent mutation (23.369322ms)
+✔ SDK contract: cancellation stops backend and stream; overlapping turns rejected (491.902201ms)
+✔ actual SDK turn aggregates replace snapshots; cache and reasoning never inflate total (9.936796ms)
+✔ missing metrics remain unknown; reported zero stays actual zero (1.063069ms)
+✔ malformed, fractional, negative, overflowing and decreasing cumulative counts are rejected (1.27158ms)
+✔ estimates include repeated input, deduplicate tool events and remain distinct from actual (1.752979ms)
+✔ strict task threshold blocks new discovery but allows safety validation, commands and staging (2.901059ms)
+✔ off and advisory preserve operations even beyond task target (0.856138ms)
+✔ configuration is strict and bounded; mismatched model metadata cannot activate provider limits (4.489894ms)
+✔ conservative retrieval preserves a minimum useful package and warns about validation reserve (0.501375ms)
+✔ tool count, repeated identical discovery and repeated failed validation stop bounded nonessential work (0.820075ms)
+✔ provider profiles use separate rolling TPM/RPM estimates and expire without fixed delay (1.149682ms)
+✔ cancellation interrupts pacing and clears active state without a stuck permission (4.782926ms)
+✔ fallback attempts carry spend and compaction never resets the task budget (0.730837ms)
+✔ post-turn actual input participates in pacing without adding estimated and actual representations (0.996187ms)
+✔ aggregated metrics overflow remains unknown instead of publishing a fabricated saturated count (0.797177ms)
+✔ only explicitly successful terminal states with no pending actions pass (7.317069ms)
+✔ only local TrueForge URLs can receive requests (2.428374ms)
+✔ errors do not expose server bodies or credentials (1.646366ms)
+✔ fallback requires developer machine settings and has no automatic agent default (28.142109ms)
+✔ discovery and targeted content/symbol queries find files beyond 200 with secure Git inventory (3619.638808ms)
+✔ context ranks evidence, resolves explicit references and enforces measured estimate budget (351.916725ms)
+✔ range reads paginate large files while retaining ordinary read bounds and containment (16.506951ms)
+✔ workspace disposal kills an in-flight Git metadata subprocess (106.141811ms)
+✔ structural outlines ground targeted range reads and bound metadata without bypassing path policy (32.360141ms)
+✔ draft diagnostics distinguish malformed variants, hashes, missing and repeated anchors, overlaps and targets (114.649206ms)
+✔ three independent retained drafts assemble without writes; corrections supersede IDs and stale hashes fail (51.384037ms)
+✔ draft scopes, limits, links, anchor checks and cleanup reject obsolete or unsafe results (28.501178ms)
+✔ runtime cancellation invalidates in-flight validation and cannot revive a retired scope (13.189516ms)
+✔ incremental drafts preserve prior edits; duplicate submissions need explicit replacement and current IDs (41.86965ms)
+✔ streams deltas immediately and avoids duplicate final content (2.139127ms)
+✔ model failures and pauses surface actionable errors (2.799445ms)
+✔ failure taxonomy uses bounded status and SDK/provider metadata (4.901804ms)
+✔ local conflicts, invalid patches, denied approvals and cancellation never select fallback (2.853914ms)
+✔ terminal provider errors preserve typed causes while public logs contain no raw body or credentials (2.517874ms)
+✔ real MCP HTTP discovery, tools, policy errors, authentication and shutdown (371.27086ms)
+✔ companion process terminates on explicit stop and startup failure (763.622394ms)
+✔ companion terminates when parent IPC disappears (402.367263ms)
+✔ opt-in proposal MCP validates structured edits and never writes files (97.597416ms)
+✔ autonomous MCP exposes secure retrieval and no-write multi-file proposal transport (456.809567ms)
+✔ optional autonomous tool pacing spaces responses without changing file contents (178.511908ms)
+✔ shipped renderer appends stream text in place, suppresses stale events and treats model HTML as literal data (16.681692ms)
+✔ shipped renderer sends typed prompt/keyboard/cancel/context messages and respects running controls (6.859655ms)
+✔ shipped renderer distinguishes staged/partial application and keeps Apply disabled for pending decisions (15.635248ms)
+✔ shipped renderer updates collapsible tool rows and preserves a user scroll position (4.979591ms)
+✔ shipped renderer displays actual/configured/estimated/unknown budget labels as literal text (3.660442ms)
+✔ panel manifest uses its own activity bar, preserves all existing commands and contributes a supported webview (26.620186ms)
+✔ panel message schema rejects malformed data, authority fields, oversized input and arbitrary commands (11.82741ms)
+✔ panel maps genuine SDK delta events incrementally without printing the final content twice (1.947682ms)
+✔ panel shows tool activity and exact approval/running/error state without treating it as source-edit permission (1.731221ms)
+✔ panel cancellation and reset invalidate prior request/session identities and stale proposal exposure (1.116026ms)
+✔ real-runtime non-JSON terminal denial stays rejected and cannot become a completed command (1.024167ms)
+✔ panel proposal distinguishes staged, mixed decisions and partial application; incomplete proposals never surface (0.681906ms)
+✔ webview uses local nonce scripts, restrictive CSP, text-only rendering and bounded accessible controls (11.90247ms)
+✔ selection capture preserves offsets, metadata and immutable snapshot (3.863962ms)
+✔ valid strict patch parsing and generation; no prose fallback (9.774952ms)
+✔ rejects ambiguous, overlapping, out-of-selection and incorrect-base edits (0.858349ms)
+✔ line hunks cover independent changes, additions, deletions, CRLF and EOF (2.638486ms)
+✔ staging never mutates disk; records hashes, identity and independent decisions (58.011612ms)
+✔ accept all renders all changes and keeps original file untouched (11.412487ms)
+✔ reject all is terminal and cannot subsequently commit or approve (13.711136ms)
+✔ mixed acceptance applies only accepted hunks (5.660722ms)
+✔ stale versions and changed content rejected; external file conflicts detected (12.640193ms)
+✔ staging rejects missing tool approval, wrong targets, traversal and symlink escapes (7.856941ms)
+✔ cancellation before approval, after staging, and delayed staging is terminal (5.275973ms)
+✔ failed application cannot be retried with the same proposal (4.352341ms)
+✔ path revalidation blocks symlink replacement after approval (5.404973ms)
+✔ an unreachable primary endpoint falls back once to a configured SDK fixture with fresh approval (685.277412ms)
+✔ SDK fallback uses fresh inline sessions, owned connectors and fresh approvals after staged failure (870.961621ms)
+✔ both providers fail once, then the next manual command succeeds without restart (1944.752864ms)
+✔ approval denial and malformed model patches never fallback (598.78115ms)
+✔ cancel during primary stream, fallback preparation and approval prevents delayed activation (788.753489ms)
+✔ fallback must be explicitly configured, distinct and existing (545.439814ms)
+✔ autonomous fallback never adopts failed generation files or approvals (579.311089ms)
+✔ cancellation during fallback initialization and secondary streaming cleans both sessions (793.350197ms)
+✔ external edits during fallback approval remain intact and cannot become a proposal (458.916493ms)
+✔ a failed SDK denial submission never changes user rejection into fallback (260.819262ms)
+✔ real SDK/companion over-budget request never starts inference, revokes authority and never selects fallback (736.873614ms)
+✔ real SDK snapshots apply only matching enabled profile limits without mutating saved manifests (1763.494649ms)
+✔ range deduplication revalidates hashes, rejects stale files, and resets with request scope (68.442511ms)
+✔ deduplication never bypasses sensitive-path, symlink or disposed authorization checks (5.960088ms)
+✔ retrieval omits changed scan snapshots instead of attributing stale code to current hashes (27.289981ms)
+✔ checkpoint metadata contains no source or approval; invalidation and new sessions cannot reuse draft IDs (19.767301ms)
+✔ syntax preflight parses JSON/CommonJS without executing code, and reports actionable failures (1209.399748ms)
+✔ actual stateless MCP shares request-scoped deduplication and strict limits while preserving checks (312.607372ms)
+✔ authorized root replacement invalidates context access and short ranges never inflate response cost (12.508227ms)
+✔ low-budget outlines and ranges preserve hashes while precisely disclosing reduced source output (8.911731ms)
+✔ SDK + real MCP: approved failed command returns exit 7, retained correction gets separate staging and pending hunks (1882.977444ms)
+✔ SDK terminal denial returns safe feedback and executes no MCP tools (446.641076ms)
+✔ SDK provider failure after terminal refusal never triggers model fallback or execution (400.168873ms)
+✔ SDK cancel while terminal approval pending ignores a delayed affirmative reply and stops without fallback (356.303099ms)
+✔ SDK fallback after terminal permission revokes the old grant and requires a fresh correlated approval (1424.813647ms)
+✔ SDK terminal approval with the wrong source event is refused before developer approval or execution (372.918823ms)
+✔ terminal policy: typed operations reject arbitrary commands, flags, chains, inline code and malformed variants (8.602357ms)
+✔ terminal confinement rejects traversal, absolute paths, shell text and symlink escapes before approval (74.941745ms)
+✔ terminal grant: no approval, denied/mismatched payload and replay execute zero additional commands (928.397325ms)
+✔ terminal returns real Git output, nonzero command status and permits a subsequent command after failure (739.468347ms)
+✔ terminal timeout kills nested detached descendants in the PID namespace (1059.146981ms)
+✔ terminal output budget is combined and explicit; excess output terminates execution (684.722876ms)
+✔ terminal cancellation revokes pending grants, stops execution and refuses stale sessions (20.101974ms)
+✔ terminal approval is bound to directory identity and cannot follow a replacement (8.967543ms)
+✔ terminal sandbox blocks source writes, host reads and networking, and strips inherited credentials (641.170387ms)
+✔ command output redacts recognized sensitive markers and terminal controls (0.788152ms)
+✔ approved command output redacts sensitive markers independently in stdout and stderr (616.892586ms)
+✔ terminal stop awaits process cleanup and permanently closes command authority (16.947942ms)
+✔ stopping the actual companion during a running MCP command cleans up the process and its access (862.433199ms)
+✔ authenticated MCP advertises run_command but cannot grant itself authorization or use unknown schema fields (134.281075ms)
+✔ approval-wait deadline is a local timeout and never falls back or submits a delayed allow (10465.318004ms)
+✔ lists, reads, and searches real files without changing them (62.000153ms)
+✔ rejects traversal, absolute paths, alternate separators, hidden and sensitive paths (24.096721ms)
+✔ rejects external and internal symlinks, directory symlinks, hardlinks and special files (9.520279ms)
+✔ bounds reads, file traversal, matches and binary decoding (197.724331ms)
+✔ rejects sensitive directories as authorized roots (4.797525ms)
+✔ ancestor symlink replacement races never disclose outside file contents (131.993098ms)
+ℹ tests 140
+ℹ suites 0
+ℹ pass 140
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 16357.922909

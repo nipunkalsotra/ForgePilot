@@ -1,0 +1,71 @@
+{
+  "originalRuff": {
+    "status": "FAIL",
+    "exit": 1,
+    "stdout": "I001 [*] Import block is un-sorted or un-formatted\n  --> src/flask/cli.py:1:1\n   |\n 1 | / from __future__ import annotations\n 2 | |\n 3 | | import json\n 4 | | import ast\n 5 | | import collections.abc as cabc\n 6 | | import importlib.metadata\n 7 | | import inspect\n 8 | | import os\n 9 | | import platform\n10 | | import re\n11 | | import sys\n12 | | import traceback\n13 | | import typing as t\n14 | | from functools import update_wrapper\n15 | | from operator import itemgetter\n16 | | from types import ModuleType\n17 | |\n18 | | import click\n19 | | from click.core import ParameterSource\n20 | | from werkzeug import run_simple\n21 | | from werkzeug.serving import is_running_from_reloader\n22 | | from werkzeug.utils import import_string\n23 | |\n24 | | from .globals import current_app\n25 | | from .helpers import get_debug_flag\n26 | | from .helpers import get_load_dotenv\n   | |____________________________________^\n27 |\n28 |   if t.TYPE_CHECKING:\n   |\nhelp: Organize imports\n\nI001 [*] Import block is un-sorted or un-formatted\n  --> tests/test_cli.py:5:1\n   |\n 3 |   # its Revised BSD License. Copyright \u00a9 2015 CERN.\n 4 |\n 5 | / import importlib.metadata\n 6 | | import os\n 7 | | import platform\n 8 | | import ssl\n 9 | | import sys\n10 | | import types\n11 | | from functools import partial\n12 | | from pathlib import Path\n13 | |\n14 | | import click\n15 | | import json\n16 | |\n17 | | import pytest\n18 | | from flask.cli import config_command\n19 | | from _pytest.monkeypatch import notset\n20 | | from click.testing import CliRunner\n21 | |\n22 | | from flask import Blueprint\n23 | | from flask import current_app\n24 | | from flask import Flask\n25 | | from flask.cli import AppGroup\n26 | | from flask.cli import find_best_app\n27 | | from flask.cli import FlaskGroup\n28 | | from flask.cli import get_version\n29 | | from flask.cli import load_dotenv\n30 | | from flask.cli import locate_app\n31 | | from flask.cli import NoAppException\n32 | | from flask.cli import prepare_import\n33 | | from flask.cli import run_command\n34 | | from flask.cli import ScriptInfo\n35 | | from flask.cli import with_appcontext\n   | |_____________________________________^\n36 |\n37 |   def test_config_command(app):\n   |\nhelp: Organize imports\n\nW293 [*] Blank line contains whitespace\n  --> tests/test_cli.py:46:1\n   |\n44 |     runner = app.test_cli_runner()\n45 |     result = runner.invoke(config_command)\n46 |     \n   | ^^^^\n47 |     config = json.loads(result.output)\n48 |     assert config[\"SECRET_KEY\"] == \"***\"\n   |\nhelp: Remove whitespace from blank line\n\nFound 3 errors.\n[*] 3 fixable with the `--fix` option.\n"
+  },
+  "originalFormat": {
+    "status": "FAIL",
+    "exit": 1,
+    "stdout": "Would reformat: tests/test_cli.py\n1 file would be reformatted, 1 file already formatted\n"
+  },
+  "originalSphinx": {
+    "status": "PASS",
+    "exit": 0,
+    "logSHA256": "800be9396a361770357e82ad1f7b3c6f17b2d0aec541fa5afe98adbd6f1db2d8",
+    "output": "build succeeded."
+  },
+  "editorial": {
+    "author": "manual Phase 5 supplemental changes, not autonomous acceptance",
+    "ruff": {
+      "status": "PASS",
+      "exit": 0,
+      "output": "All checks passed!"
+    },
+    "format": {
+      "status": "PASS",
+      "exit": 0,
+      "output": "2 files already formatted"
+    },
+    "pytest": {
+      "status": "PASS",
+      "exit": 0,
+      "output": "113 passed in 0.52s"
+    },
+    "sphinx": {
+      "status": "PASS",
+      "exit": 0,
+      "logSHA256": "19fc9c827e72526d63da0d46647bccf3a6a3b9efe925ae13887ed922dae624d5",
+      "output": "build succeeded."
+    },
+    "clickOptionsAndShortHelp": "PASS: exactly match pinned upstream"
+  },
+  "originalClickComparison": {
+    "baselineOptionOrder": [
+      "debug",
+      "host",
+      "port",
+      "cert",
+      "key",
+      "reload",
+      "debugger",
+      "with_threads",
+      "extra_files",
+      "exclude_patterns"
+    ],
+    "acceptedOptionOrder": [
+      "debug",
+      "exclude_patterns",
+      "extra_files",
+      "with_threads",
+      "debugger",
+      "reload",
+      "key",
+      "cert",
+      "port",
+      "host"
+    ],
+    "baselineShortHelp": "Run a development server.",
+    "acceptedShortHelp": "Run a local development server."
+  }
+}

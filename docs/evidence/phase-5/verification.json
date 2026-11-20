@@ -1,0 +1,159 @@
+{
+  "verifiedAt": "2026-11-19T11:48:20.474709+00:00",
+  "commands": [
+    {
+      "command": "npm run check",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-check.log",
+      "logSHA256": "ac3c884021bbd8bbdfa679ecf780cbc4c830cf1b42e2765146a65081c8b6ee15",
+      "tests": 83,
+      "failures": 0,
+      "skipped": 0,
+      "nativeAssertions": []
+    },
+    {
+      "command": "npm exec --yes --package=node@22 -- npm run check",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-node22.log",
+      "logSHA256": "a23dfb48fea7f0bb0bd41cb17f675a88077afc38187c289b4b5da28ed5e524e2",
+      "tests": 83,
+      "failures": 0,
+      "skipped": 0,
+      "nativeAssertions": []
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm run check",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-node24.log",
+      "logSHA256": "47dfcb3a294d282cf6296f63a04fefc324b90d0ffdbcb2b9ab6440da35bef6ae",
+      "tests": 83,
+      "failures": 0,
+      "skipped": 0,
+      "nativeAssertions": []
+    },
+    {
+      "command": "npm run test:live",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/live.log",
+      "logSHA256": "a8990daaa4231a73182f2e4baac0f1cbe875146e866cb1c3a5be87c80c932b04",
+      "nativeAssertions": []
+    },
+    {
+      "command": "npm run test:editing:live",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/editing-live.log",
+      "logSHA256": "3c85229d42a0fb587a7d5b010e897226ea391ce11c051c47c4c2dd82d9468f2f",
+      "nativeAssertions": []
+    },
+    {
+      "command": "VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/development-host-final.log",
+      "logSHA256": "87d8650b771b09c49335068d9f59e4cf9995e222ad16c89e313a2fe4c5fd2b21",
+      "nativeAssertions": [
+        "PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 25 palette contributions/registrations, autonomous invocation, idle cleanup.",
+        "PASS: Actual VS Code APIs: selection, diff, mixed hunks, accept/reject all, apply, exact undo, stale/user-change protection, cancellation and model failure. Agent is a labelled fixture here.",
+        "PASS: Actual multi-file VS Code diffs, file/hunk mixed decisions, coordinated apply, reviewed creation, exact batch undo, and subsequent-user-change protection. Agent fixture, not live model evidence.",
+        "PASS: Native VS Code resilience fixture: responsive timers, failed staged generation isolated, fresh approval/diff, approved apply, exact undo, next request, cancelled staging. SDK-wire fixture, not provider evidence."
+      ]
+    },
+    {
+      "command": "FORGEPILOT_EXTENSION_PATH=<installed> VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-installed-host.log",
+      "logSHA256": "f8cb262cf82bf98e9ac6a2771bd7c327703442c5683a1ec0cb80c26b06633bf5",
+      "nativeAssertions": [
+        "PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 25 palette contributions/registrations, autonomous invocation, idle cleanup.",
+        "PASS: Actual VS Code APIs: selection, diff, mixed hunks, accept/reject all, apply, exact undo, stale/user-change protection, cancellation and model failure. Agent is a labelled fixture here.",
+        "PASS: Actual multi-file VS Code diffs, file/hunk mixed decisions, coordinated apply, reviewed creation, exact batch undo, and subsequent-user-change protection. Agent fixture, not live model evidence.",
+        "PASS: Native VS Code resilience fixture: responsive timers, failed staged generation isolated, fresh approval/diff, approved apply, exact undo, next request, cancelled staging. SDK-wire fixture, not provider evidence."
+      ]
+    },
+    {
+      "command": "FORGEPILOT_EXTENSION_LIVE=1 FORGEPILOT_EXTENSION_PATH=<installed> VSCODE_EXECUTABLE_PATH=/opt/visual-studio-code/code npm run test:extension",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/installed-command-live.log",
+      "logSHA256": "127386928da8cac40ec8039b078d5d4f1e71ae23b3b384ca9328d86717f45da8",
+      "nativeAssertions": [
+        "PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 25 palette contributions/registrations, autonomous invocation, idle cleanup.",
+        "PASS: Extension \u2192 SDK \u2192 saved forge-coder \u2192 companion MCP \u2192 file \u2192 persisted history. Session 01m7ssn7kgbf52g62xw19kdbac"
+      ]
+    },
+    {
+      "command": "npm run package:extension",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-package.log",
+      "logSHA256": "96b8d517c120be046821ca0fd3a48eb136e073796349e959c73e5580dac4c44c",
+      "nativeAssertions": []
+    },
+    {
+      "command": "/opt/visual-studio-code/bin/code --install-extension ./artifacts/forgepilot.vsix --force",
+      "status": "PASS",
+      "exit": 0,
+      "localLog": "artifacts/phase5/final-install.log",
+      "logSHA256": "e1b264727080387a05cb98ce1ee6255fbc20e70024571294be4cd633f3f7b669",
+      "nativeAssertions": []
+    }
+  ],
+  "nodeVersions": [
+    "22.23.5",
+    "24.22.3",
+    "26.7.0"
+  ],
+  "vscodeVersion": "1.117.0",
+  "bundleSHA256": {
+    "extension.cjs": "fc2d42d79e7f438395478993b0c7bef4e27ea781ba81349d6814c63e625c40a3",
+    "mcp-child.cjs": "42ac1f66f20277b9fee0a2130b657b6c5dcd4c02d10d7b19d64f4ec5319c04db",
+    "THIRD_PARTY_NOTICES.txt": "d6cbe53d5d662e1c8acb7f3d6100b3bb016f85eb3e27412840609ab69c9340cd"
+  },
+  "installedDirectory": "/home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0",
+  "installedPayloadMatchesBuild": true,
+  "vsix": {
+    "bytes": 491491,
+    "sha256": "477bf43643a62ffeaa2dd1502488b32708fe1e96a9f03f85e07b7cb57b5509d4",
+    "files": [
+      "extension.vsixmanifest",
+      "[Content_Types].xml",
+      "extension/package.json",
+      "extension/readme.md",
+      "extension/LICENSE.txt",
+      "extension/dist/mcp-child.cjs",
+      "extension/dist/extension.cjs",
+      "extension/dist/THIRD_PARTY_NOTICES.txt",
+      "extension/config/trueforge.env.example",
+      "extension/config/forge-coder.agent.json",
+      "extension/config/forge-coder-openrouter.agent.json",
+      "extension/config/forge-coder-gemini-high.agent.json"
+    ]
+  },
+  "npmAudit": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "physicalGUI": "NOT TESTED",
+  "fullFreshTaskB": "NOT TESTED; offline replay only",
+  "freshGenuineTaskC": "NOT TESTED; retained real evidence plus fresh controlled tests",
+  "finalDeliveryCheck": {
+    "command": "npm run check",
+    "status": "PASS",
+    "exit": 0,
+    "tests": 83,
+    "failures": 0,
+    "skipped": 0,
+    "localLog": "artifacts/phase5/delivery-check.log",
+    "logSHA256": "4c7abb9a71ce9abeb19a486d6acd17f6d7c30e421fd8e32105e08b91083fc184"
+  }
+}

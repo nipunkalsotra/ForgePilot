@@ -1,0 +1,10 @@
+[521601:1119/185959.705441:ERROR:media/gpu/vaapi/vaapi_wrapper.cc:1631] vaInitialize failed: unknown libva error
+[90m[main 2026-11-19T13:29:59.882Z][0m update#setState disabled
+[90m[main 2026-11-19T13:29:59.882Z][0m update#ctor - updates are disabled by the environment
+Started local extension host with pid 522122.
+Loading development extension at /home/nipun/.vscode/extensions/nipunkalsotra.forgepilot-0.1.0
+Settings Sync: Account status changed from uninitialized to unavailable
+PASS: Correct ForgePilot bundle loaded, command-triggered activation, all 26 palette contributions/registrations, autonomous invocation, idle cleanup.
+PASS: Genuine installed panel failed npm command → model retained-draft correction → fresh SDK staging → native pending hunks → explicit accept/apply → actual verification passed → guarded undo. 01m7t0003e0db3eqwj14sm68fz
+[90m[main 2026-11-19T13:30:15.730Z][0m Extension host with pid 522122 exited with code: 0, signal: unknown.
+Exit code:   0

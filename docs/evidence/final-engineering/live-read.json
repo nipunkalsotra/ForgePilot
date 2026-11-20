@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-11-19T16:56:31.327Z",
+  "trueforgeVersion": "0.185.1",
+  "sdkVersion": "0.185.0",
+  "checks": {
+    "session": "PASS",
+    "streaming": "FAIL",
+    "cleanup": "PASS",
+    "workspaceUnchanged": "PASS",
+    "mcpExecution": "NOT TESTED",
+    "persistedToolHistory": "NOT TESTED"
+  },
+  "sessionId": "01m7tbt27ddh9yq4282rhcs2yx",
+  "model": "google-gemini/gemini-3-1-flash-lite",
+  "error": "TrueForge turn failed or its stream did not complete successfully. Pending proposals are invalid.",
+  "metrics": {
+    "totalInputTokens": 0,
+    "totalOutputTokens": 0,
+    "totalTokens": 0
+  },
+  "toolExecutions": [],
+  "workspaceHashesBefore": {
+    ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+    "src/inspection.txt": "51750a75ba2c8dbbba492e699a94499ab6f6fe4cbcfe109c7cc7c84ef9e3e079"
+  },
+  "workspaceHashesAfter": {
+    ".env": "9c4108e28170c513dfb5638844bde8a615116b5f7428f205a4cce8d90c4bcc0b",
+    "src/inspection.txt": "51750a75ba2c8dbbba492e699a94499ab6f6fe4cbcfe109c7cc7c84ef9e3e079"
+  }
+}

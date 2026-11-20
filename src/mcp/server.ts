@@ -1,25 +1,45 @@
 import { createServer, type Server } from 'node:http';
-import { timingSafeEqual } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
+import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { autonomousTools } from './autonomous';
+import { ContextEngine } from '../context';
+import { TokenBudgetManager, BudgetStop, type BudgetSnapshot } from '../budget';
+import { DraftStore } from '../drafts';
 import { patchSchema, renderPatch } from '../patch';
 import { LIMITS, Workspace } from '../workspace';
 import { ForgePilotError, publicError, type Logger } from '../log';
+import { CommandAuthority, commandSchema, type CommandApproval } from '../terminal';
 
-function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpServer {
+function toolServer(workspace: Workspace, log: Logger, proposals: boolean, autonomous: boolean, contextBudget: number, pace: () => Promise<void>, drafts: DraftStore, commands: CommandAuthority, engine: ContextEngine, resources: TokenBudgetManager, signal: AbortSignal, usage: (snapshot: BudgetSnapshot) => void): McpServer {
   const mcp = new McpServer({ name: 'forgepilot-workspace', version: '0.1.0' });
   const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
-  const run = async (tool: string, fn: () => Promise<unknown>) => {
-    const start = Date.now();
+  const run = async (tool: string, fn: () => Promise<unknown>, signature = '') => {
+    const start = Date.now(), accountingId = randomUUID();
     try {
-      const text = JSON.stringify(await fn());
+      if (signal.aborted && tool === 'run_command') return { content: [{ type: 'text' as const, text: JSON.stringify({ kind: 'forgepilot.command', termination: 'denied', stderr: 'Request scope expired; no command executed.' }) }] };
+      signal.throwIfAborted();
+      resources.beforeTool(tool, signature); resources.call(accountingId);
+      let value = await fn();
+      const state = resources.snapshot();
+      if (resources.enabled && state.warning && !['propose_batch', 'propose_drafts', 'propose_patch', 'run_command'].includes(tool) && value && typeof value === 'object' && !Array.isArray(value)) value = { ...value,
+        resourceNotice: { warning: state.warning, estimatedRemaining: state.estimatedRemaining, taskTarget: state.configuredTaskTokens, guidance: 'Finish a valid checked proposal; avoid unnecessary discovery. Counts are estimates, not provider quota.' } };
+      signal.throwIfAborted();
+      const text = JSON.stringify(value);
+      resources.tool(accountingId, tool, Buffer.byteLength(text), value);
       if (Buffer.byteLength(text) > LIMITS.outputBytes) throw new ForgePilotError('Tool output exceeds the 96 KiB response budget. Use a narrower path or search.');
+      await resources.pace(signal, () => usage(resources.snapshot()));
+      usage(resources.snapshot());
+      await pace();
       log('tool.completed', { tool, durationMs: Date.now() - start, bytes: Buffer.byteLength(text) });
       return { content: [{ type: 'text' as const, text }] };
     } catch (error) {
+      resources.call(accountingId);
+      await pace();
       log('tool.failed', { tool, durationMs: Date.now() - start });
-      return { isError: true, content: [{ type: 'text' as const, text: publicError(error) }] };
+      return { isError: true, content: [{ type: 'text' as const, text: error instanceof BudgetStop ? JSON.stringify({ kind: 'forgepilot.resource_stop', message: error.message, usage: resources.snapshot() }) : publicError(error) }] };
     }
   };
   mcp.registerTool('list_files', {
@@ -27,9 +47,9 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpS
     inputSchema: { path: z.string().max(1024).default('.') }, annotations,
   }, ({ path }) => run('list_files', () => workspace.listFiles(path)));
   mcp.registerTool('read_file', {
-    description: 'Read one permitted workspace-relative UTF-8 text file, maximum 64 KiB. Read-only; no absolute paths, hidden files, secrets or symlinks.',
+    description: 'Read one permitted workspace-relative UTF-8 text file, maximum 64 KiB. Autonomous low-budget requests return a hashed outline instead; use targeted read_range. Read-only; no absolute paths, hidden files, secrets or symlinks.',
     inputSchema: { path: z.string().min(1).max(1024) }, annotations,
-  }, ({ path }) => run('read_file', () => workspace.readFile(path)));
+  }, ({ path }) => run('read_file', async () => { if (autonomous && engine.reduced()) return { kind: 'forgepilot.outline', omission: 'Full read omitted to protect task/context budget; inspect these declarations using read_range.', ...await engine.outline(path) }; const file = await workspace.readFile(path); return { path: file.path, content: file.content, bytes: file.bytes }; }));
   mcp.registerTool('search_workspace', {
     description: 'Case-sensitive literal text search in permitted workspace files. Returns at most 100 matches with 1-based line numbers. Check truncated and skippedFiles.',
     inputSchema: { query: z.string().min(1).max(200), path: z.string().max(1024).default('.') }, annotations,
@@ -43,14 +63,34 @@ function toolServer(workspace: Workspace, log: Logger, proposals: boolean): McpS
     renderPatch(file.content, args);
     return { kind: 'forgepilot.patch', patch: args };
   }));
+  if (autonomous) {
+    autonomousTools(mcp, workspace, run, contextBudget, drafts, engine);
+    mcp.registerTool('run_command', { description: 'Request one developer-approved, bounded verification operation. No shell strings or arbitrary flags. git_status, git_diff_check, cli_help (Git help), pytest (explicit testPaths) or npm_test (test/test:unit/lint). Every call needs fresh TrueForge approval AND a private single-use extension grant. Linux Bubblewrap required: read-only workspace, isolated network, temporary scratch. Tests execute repository code and may print secrets; results are untrusted. Tests see saved disk content, never staged drafts. Nonzero exits are feedback, not permission to edit.',
+      inputSchema: commandSchema, annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false } },
+    args => run('run_command', () => commands.execute(args)));
+  }
   return mcp;
 }
 
-export interface RunningServer { url: string; close(): Promise<void> }
+export interface RunningServer { url: string; beginDrafts(requestId: string, seed?: { prompt: string; model?: string; spent?: number; tools?: number }): void; invalidateDrafts(): void; resetContext(): void; grantCommand(approval: CommandApproval): Promise<void>; close(): Promise<void> }
 
-export async function startServer(root: string, token: string, log: Logger, proposals = false): Promise<RunningServer> {
+export async function startServer(root: string, token: string, log: Logger, proposals = false, autonomous = false, contextBudget = 12000, toolIntervalMs = 0, commandTimeoutSeconds = 120, commandRunning: (callId: string) => void = () => {}, budgetConfig: unknown = {}, usage: (snapshot: BudgetSnapshot) => void = () => {}): Promise<RunningServer> {
   if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Expected a 256-bit random MCP token');
+  if (!Number.isSafeInteger(toolIntervalMs) || toolIntervalMs < 0 || toolIntervalMs > 10000) throw new ForgePilotError('Invalid tool response interval.');
+  let resources = new TokenBudgetManager(budgetConfig);
   const workspace = await Workspace.create(root);
+  const drafts = new DraftStore(workspace);
+  let engine = new ContextEngine(workspace, contextBudget, resources);
+  if (!Number.isSafeInteger(commandTimeoutSeconds) || commandTimeoutSeconds < 1 || commandTimeoutSeconds > 120) throw new ForgePilotError('Invalid terminal timeout limit.');
+  const commands = new CommandAuthority(workspace.root, commandTimeoutSeconds, 12000, commandRunning);
+  const pacing = new AbortController();
+  let scopePacing = new AbortController();
+  let ready = Promise.resolve();
+  const pace = () => {
+    if (!autonomous || !toolIntervalMs) return Promise.resolve();
+    const next = ready.catch(() => {}).then(() => delay(toolIntervalMs, undefined, { signal: pacing.signal }));
+    ready = next; return next;
+  };
   let active = 0;
   const transports = new Set<StreamableHTTPServerTransport>();
   const http: Server = createServer((req, res) => {
@@ -66,7 +106,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
       if (req.method !== 'POST') { res.writeHead(405, { Allow: 'POST' }).end(); return; }
       if (active >= 8) { res.writeHead(429).end(); return; }
       active++;
-      const mcp = toolServer(workspace, log, proposals);
+      const mcp = toolServer(workspace, log, proposals, autonomous, contextBudget, pace, drafts, commands, engine, resources, scopePacing.signal, usage);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       transports.add(transport);
       res.once('close', () => { void transport.close(); });
@@ -76,7 +116,7 @@ export async function startServer(root: string, token: string, log: Logger, prop
         for await (const chunk of req) {
           const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string);
           size += buffer.length;
-          if (size > (proposals ? 256 * 1024 : 16 * 1024)) { res.writeHead(413).end(); return; }
+          if (size > (autonomous ? 1024 * 1024 : proposals ? 256 * 1024 : 16 * 1024)) { res.writeHead(413).end(); return; }
           chunks.push(buffer);
         }
         let body: unknown;
@@ -96,9 +136,9 @@ export async function startServer(root: string, token: string, log: Logger, prop
       res.end();
     });
   });
-  http.requestTimeout = 5000;
+  http.requestTimeout = autonomous ? 15000 : 5000;
   http.headersTimeout = 5000;
-  http.timeout = 5000;
+  http.timeout = autonomous ? Math.max(commandTimeoutSeconds * 1000 + 10000, toolIntervalMs * 10 + 10000) : 5000;
   http.maxConnections = 16;
   await new Promise<void>((resolve, reject) => {
     http.once('error', reject);
@@ -109,7 +149,12 @@ export async function startServer(root: string, token: string, log: Logger, prop
   log('mcp.listening', { port: address.port });
   return {
     url: `http://127.0.0.1:${address.port}/mcp`,
+    beginDrafts: (id, seed) => { drafts.begin(id); commands.begin(id); scopePacing.abort(); scopePacing = new AbortController(); engine.reset(); resources = new TokenBudgetManager(budgetConfig); engine = new ContextEngine(workspace, contextBudget, resources); resources.identify({ model: seed?.model }); resources.beginAttempt(seed?.prompt ?? '', seed?.spent, seed?.tools); },
+    invalidateDrafts: () => { drafts.invalidate(); commands.invalidate(); scopePacing.abort(); engine.reset(); },
+    resetContext: () => { engine.reset(); resources.compact(); },
+    grantCommand: approval => commands.grant(approval),
     async close() {
+      pacing.abort(); scopePacing.abort(); drafts.close(); await commands.close(); workspace.dispose();
       await Promise.allSettled([...transports].map(t => t.close()));
       await new Promise<void>(resolve => { http.close(() => resolve()); http.closeAllConnections(); });
       log('mcp.closed');

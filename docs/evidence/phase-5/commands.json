@@ -1,0 +1,106 @@
+[
+  {
+    "command": "forgepilot.start",
+    "title": "ForgePilot: Start Read-Only Session"
+  },
+  {
+    "command": "forgepilot.ask",
+    "title": "ForgePilot: Ask Agent"
+  },
+  {
+    "command": "forgepilot.cancel",
+    "title": "ForgePilot: Cancel Turn"
+  },
+  {
+    "command": "forgepilot.stop",
+    "title": "ForgePilot: Stop Session and MCP Server"
+  },
+  {
+    "command": "forgepilot.setToken",
+    "title": "ForgePilot: Set TrueForge Authentication Token"
+  },
+  {
+    "command": "forgepilot.inlineEdit",
+    "title": "ForgePilot: Edit Selection"
+  },
+  {
+    "command": "forgepilot.review",
+    "title": "ForgePilot: Review Patch Hunks"
+  },
+  {
+    "command": "forgepilot.showHunk",
+    "title": "ForgePilot: Show Hunk Diff"
+  },
+  {
+    "command": "forgepilot.acceptHunk",
+    "title": "ForgePilot: Accept Hunk",
+    "icon": "$(check)"
+  },
+  {
+    "command": "forgepilot.rejectHunk",
+    "title": "ForgePilot: Reject Hunk",
+    "icon": "$(close)"
+  },
+  {
+    "command": "forgepilot.acceptAll",
+    "title": "ForgePilot: Accept All Hunks"
+  },
+  {
+    "command": "forgepilot.rejectAll",
+    "title": "ForgePilot: Reject All Hunks"
+  },
+  {
+    "command": "forgepilot.apply",
+    "title": "ForgePilot: Apply Accepted Hunks"
+  },
+  {
+    "command": "forgepilot.undo",
+    "title": "ForgePilot: Undo Last Accepted Edit"
+  },
+  {
+    "command": "forgepilot.autonomous",
+    "title": "ForgePilot: Autonomous Agent"
+  },
+  {
+    "command": "forgepilot.batchDiff",
+    "title": "ForgePilot: Show Batch File Diff"
+  },
+  {
+    "command": "forgepilot.batchReview",
+    "title": "ForgePilot: Review Batch Hunks"
+  },
+  {
+    "command": "forgepilot.batchAccept",
+    "title": "ForgePilot: Accept Batch File or Hunk",
+    "icon": "$(check)"
+  },
+  {
+    "command": "forgepilot.batchReject",
+    "title": "ForgePilot: Reject Batch File or Hunk",
+    "icon": "$(close)"
+  },
+  {
+    "command": "forgepilot.batchAcceptRemaining",
+    "title": "ForgePilot: Accept Remaining Batch Hunks"
+  },
+  {
+    "command": "forgepilot.batchRejectRemaining",
+    "title": "ForgePilot: Reject Remaining Batch Hunks"
+  },
+  {
+    "command": "forgepilot.batchApply",
+    "title": "ForgePilot: Apply Accepted Batch Hunks"
+  },
+  {
+    "command": "forgepilot.batchUndo",
+    "title": "ForgePilot: Undo Last Accepted Batch"
+  },
+  {
+    "command": "forgepilot.contextInspector",
+    "title": "ForgePilot: Inspect Repository Context"
+  },
+  {
+    "command": "forgepilot.verificationTerminal",
+    "title": "ForgePilot: Open Verification Terminal"
+  }
+]

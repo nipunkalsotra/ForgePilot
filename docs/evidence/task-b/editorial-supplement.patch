@@ -1,0 +1,136 @@
+diff --git a/docs/cli.rst b/docs/cli.rst
+--- a/docs/cli.rst
++++ b/docs/cli.rst
+@@ -146,14 +146,20 @@
+ Use :meth:`~Flask.shell_context_processor` to add other automatic imports.
+ 
+ 
++.. _cli-config:
++
+ Show Configuration
+ ------------------
+ 
+-To see the current configuration of your application, use the :func:`config <cli.config_command>` command.
+-The output is formatted as JSON. Sensitive values, such as keys containing
+-"SECRET", "PASSWORD", "TOKEN", or "KEY", are masked. ::
+-
+-    $ flask config
++To see the current configuration of your application, select an application
++and use the ``config`` command. The output is formatted as JSON. Keys
++containing ``SECRET``, ``PASSWORD``, ``TOKEN``, or ``KEY`` are matched
++case-insensitively and their values replaced with ``"***"``. Other values
++are preserved; values without a native JSON representation, such as timedeltas,
++are converted to strings. The application configuration is not modified.
++Only key names are inspected; review other values before sharing output. ::
++
++    $ flask --app hello config
+     {
+       "DATABASE_URL": "url",
+       "SECRET_KEY": "***"
+@@ -432,25 +438,6 @@
+     $ flask create alice
+ 
+ 
+-.. _cli-config:
+-
+-Config
+-~~~~~~
+-
+-The :func:`config <cli.config_command>` command displays the application's
+-configuration values as JSON. Sensitive keys (containing ``SECRET``,
+-``PASSWORD``, ``TOKEN``, or ``KEY``) are masked for security.
+-
+-.. code-block:: text
+-
+-    $ flask config
+-    {
+-      "DATABASE_URI": "sqlite:////tmp/test.db",
+-      "SECRET_KEY": "***",
+-      ...
+-    }
+-
+-
+ Application Context
+ ~~~~~~~~~~~~~~~~~~~
+ 
+diff --git a/src/flask/cli.py b/src/flask/cli.py
+--- a/src/flask/cli.py
++++ b/src/flask/cli.py
+@@ -1,10 +1,10 @@
+ from __future__ import annotations
+ 
+-import json
+ import ast
+ import collections.abc as cabc
+ import importlib.metadata
+ import inspect
++import json
+ import os
+ import platform
+ import re
+@@ -908,6 +908,7 @@
+     click.echo(json.dumps(config, indent=2, sort_keys=True, default=str))
+ 
+ 
++@click.command("run", short_help="Run a development server.")
+ @click.option("--host", "-h", default="127.0.0.1", help="The interface to bind to.")
+ @click.option("--port", "-p", default=5000, help="The port to bind to.")
+ @click.option(
+@@ -959,7 +960,6 @@
+         f" {os.path.pathsep!r}."
+     ),
+ )
+-@click.command("run", short_help="Run a local development server.")
+ @pass_script_info
+ def run_command(
+     info: ScriptInfo,
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -1,8 +1,8 @@
+-
+ # This file was part of Flask-CLI and was modified under the terms of
+ # its Revised BSD License. Copyright © 2015 CERN.
+ 
+ import importlib.metadata
++import json
+ import os
+ import platform
+ import ssl
+@@ -12,10 +12,7 @@
+ from pathlib import Path
+ 
+ import click
+-import json
+-
+ import pytest
+-from flask.cli import config_command
+ from _pytest.monkeypatch import notset
+ from click.testing import CliRunner
+ 
+@@ -23,6 +20,7 @@
+ from flask import current_app
+ from flask import Flask
+ from flask.cli import AppGroup
++from flask.cli import config_command
+ from flask.cli import find_best_app
+ from flask.cli import FlaskGroup
+ from flask.cli import get_version
+@@ -34,6 +32,7 @@
+ from flask.cli import ScriptInfo
+ from flask.cli import with_appcontext
+ 
++
+ def test_config_command(app):
+     app.config["SECRET_KEY"] = "secret"
+     app.config["PASSWORD_HASH"] = "password"
+@@ -43,7 +42,8 @@
+ 
+     runner = app.test_cli_runner()
+     result = runner.invoke(config_command)
+-    
++
++    assert result.exit_code == 0
+     config = json.loads(result.output)
+     assert config["SECRET_KEY"] == "***"
+     assert config["PASSWORD_HASH"] == "***"
